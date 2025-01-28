@@ -6,6 +6,7 @@
 #include <ituGL/geometry/VertexBufferObject.h>
 #include <ituGL/geometry/VertexArrayObject.h>
 #include <ituGL/geometry/VertexAttribute.h>
+#include <ituGL/geometry/ElementBufferObject.h>
 
 #include <iostream>
 
@@ -49,18 +50,27 @@ int main()
         -0.5f, -0.5f, 0.0f, // bottom left  
          0.5f, -0.5f, 0.0f, // bottom right 
          0.5f,  0.5f, 0.0f,  // top right
-        -0.5f, -0.5f, 0.0f, // bottom left
-        0.5f,  0.5f, 0.0f,  // top right
         -0.5f, 0.5f, 0.0f, // top left
+    };
+    
+    unsigned int indices[] = {
+        0, 1, 2, // first triangle
+        2, 0, 3 // second triangle
     };
 
     VertexBufferObject vbo;
     VertexArrayObject vao;
+    ElementBufferObject ebo;
+
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
     vao.Bind();
-    
+  
+    ebo.Bind();
+    auto indexCount = sizeof(indices) / sizeof(float);
+    ebo.AllocateData(std::span(indices, indexCount));
+
     vbo.Bind();
-    vbo.AllocateData(std::span(vertices, sizeof(vertices) / sizeof(float)));
+    vbo.AllocateData(std::span(vertices, sizeof(vertices) / sizeof(unsigned int)));
 
     VertexAttribute position(Data::Type::Float, 3);
 
@@ -72,7 +82,7 @@ int main()
     // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
     // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
     vao.Unbind();
-
+    ebo.Unbind();
 
     // uncomment this call to draw in wireframe polygons.
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -90,12 +100,12 @@ int main()
         // draw our first triangle
         glUseProgram(shaderProgram);
         vao.Bind(); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, indices);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         window.SwapBuffers();
-        glfwPollEvents();
+        device.PollEvents();
     }
 
     // optional: de-allocate all resources once they've outlived their purpose:
