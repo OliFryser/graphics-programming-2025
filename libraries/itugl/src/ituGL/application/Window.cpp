@@ -3,6 +3,8 @@
 // Create the internal GLFW window. We provide some hints about it to OpenGL
 Window::Window(int width, int height, const char* title) : m_window(nullptr)
 {
+    GLFWwindow* window = glfwCreateWindow(width, height, title, NULL, NULL);
+    m_window = window;
 }
 
 // If we have an internal GLFW window, destroy it
@@ -23,10 +25,15 @@ void Window::Close()
 // Get if the window should be closed this frame
 bool Window::ShouldClose() const
 {
-    return false;
+    if (glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    {
+        glfwSetWindowShouldClose(m_window, true);
+        return true;
+    }
 }
 
 // Swaps the front and back buffers of the window
 void Window::SwapBuffers()
 {
+    glfwSwapBuffers(m_window);
 }
