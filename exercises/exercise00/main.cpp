@@ -10,6 +10,7 @@
 #include <iostream>
 
 unsigned int BuildShaderProgram();
+void processInput(GLFWwindow* window);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -79,10 +80,11 @@ int main()
     // -----------
     while (!window.ShouldClose())
     {
+        processInput(window.GetInternalWindow());
 
         // render
         // ------
-        deviceGL.Clear(0.2f, 0.3f, 0.3f, 1.0f);
+        device.Clear(0.2f, 0.3f, 0.3f, 1.0f);
 
         // draw our first triangle
         glUseProgram(shaderProgram);
@@ -104,6 +106,14 @@ int main()
 
     
     return 0;
+}
+
+// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+// ---------------------------------------------------------------------------------------------------------
+void processInput(GLFWwindow* window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
 }
 
 unsigned int BuildShaderProgram()
