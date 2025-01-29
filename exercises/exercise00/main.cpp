@@ -12,7 +12,7 @@
 
 unsigned int BuildShaderProgram();
 void processInput(GLFWwindow* window);
-void updateVertices(float vertices[], size_t count, float angle);
+void rotateVertices(float vertices[], size_t count, float angle);
 inline static double convert(double degree)
 {
     double pi = 3.14159265359;
@@ -108,7 +108,7 @@ int main()
         float angle = time * rotationSpeed;
 
         vbo.Bind();
-        updateVertices(vertices, vertexCount, angle);
+        rotateVertices(vertices, vertexCount, angle);
         vbo.UpdateData(std::span(vertices, vertexCount), 0);
         vbo.Unbind();
         // render
@@ -143,7 +143,7 @@ void processInput(GLFWwindow* window)
         glfwSetWindowShouldClose(window, true);
 }
 
-void updateVertices(float vertices[], size_t count, float angle)
+void rotateVertices(float vertices[], size_t count, float angle)
 {
     angle += convert(45);
     for (size_t i = 0; i < count; i+=3)
