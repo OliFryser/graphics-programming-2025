@@ -52,16 +52,32 @@ int main()
 
     unsigned int shaderProgram = BuildShaderProgram();
 
+    float verticesArray[] = {
+        -0.5f, -0.5f, 0.0f, // bottom left  
+         0.5f, -0.5f, 0.0f, // bottom right 
+         0.5f,  0.5f, 0.0f,  // top right
+        -0.5f, 0.5f, 0.0f, // top left
+    };
+
+    auto vertexCount = sizeof(verticesArray) / sizeof(float);
+
+    float indicesArray[] = {
+        0, 1, 2, // first triangle
+        2, 0, 3 // second triangle
+    };
+
+    auto indexCount = sizeof(indicesArray) / sizeof(float);
+
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
-    std::vector<float> vertices {
+    std::vector<float> vertices = {
         -0.5f, -0.5f, 0.0f, // bottom left  
          0.5f, -0.5f, 0.0f, // bottom right 
          0.5f,  0.5f, 0.0f,  // top right
         -0.5f, 0.5f, 0.0f, // top left
     };
     
-    std::vector<float> indices {
+    std::vector<float> indices = {
         0, 1, 2, // first triangle
         2, 0, 3 // second triangle
     };
@@ -74,10 +90,10 @@ int main()
     vao.Bind();
   
     vbo.Bind();
-    vbo.AllocateData<const float>(vertices);
+    vbo.AllocateData<const float>(std::span(verticesArray, vertexCount));
 
     ebo.Bind();
-    ebo.AllocateData<const float>(indices);
+    ebo.AllocateData<const float>(std::span(indicesArray, indexCount));
     
     VertexAttribute position(Data::Type::Float, 3);
 
@@ -127,7 +143,6 @@ int main()
     // ------------------------------------------------------------------------
     glDeleteProgram(shaderProgram);
 
-    
     return 0;
 }
 
