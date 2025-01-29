@@ -9,10 +9,11 @@
 #include <ituGL/geometry/ElementBufferObject.h>
 
 #include <iostream>
+#include <vector>
 
 unsigned int BuildShaderProgram();
 void processInput(GLFWwindow* window);
-void rotateVertices(float vertices[], size_t count, float angle);
+void updateVertices(float vertices[], size_t count, float angle);
 inline static double convert(double degree)
 {
     double pi = 3.14159265359;
@@ -53,14 +54,14 @@ int main()
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
-    float vertices[] = {
+    std::vector<float> vertices {
         -0.5f, -0.5f, 0.0f, // bottom left  
          0.5f, -0.5f, 0.0f, // bottom right 
          0.5f,  0.5f, 0.0f,  // top right
         -0.5f, 0.5f, 0.0f, // top left
     };
     
-    unsigned int indices[] = {
+    std::vector<float> indices {
         0, 1, 2, // first triangle
         2, 0, 3 // second triangle
     };
@@ -72,14 +73,12 @@ int main()
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
     vao.Bind();
   
-    ebo.Bind();
-    auto indexCount = sizeof(indices) / sizeof(float);
-    ebo.AllocateData(std::span(indices, indexCount));
-
     vbo.Bind();
-    auto vertexCount = sizeof(vertices) / sizeof(float);
-    vbo.AllocateData(std::span(vertices, vertexCount));
+    vbo.AllocateData<const float>(vertices);
 
+    ebo.Bind();
+    ebo.AllocateData<const float>(indices);
+    
     VertexAttribute position(Data::Type::Float, 3);
 
     vao.SetAttribute(0, position, 0);
@@ -107,10 +106,6 @@ int main()
         //update
         float angle = time * rotationSpeed;
 
-        vbo.Bind();
-        rotateVertices(vertices, vertexCount, angle);
-        vbo.UpdateData(std::span(vertices, vertexCount), 0);
-        vbo.Unbind();
         // render
         // ------
         device.Clear(.5f, 0.25f, .75f, 1.0f);
@@ -118,7 +113,8 @@ int main()
         // draw our first triangle
         glUseProgram(shaderProgram);
         vao.Bind(); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-        glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, indices);
+
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -143,7 +139,7 @@ void processInput(GLFWwindow* window)
         glfwSetWindowShouldClose(window, true);
 }
 
-void rotateVertices(float vertices[], size_t count, float angle)
+void updateVertices(float vertices[], size_t count, float angle)
 {
     angle += convert(45);
     for (size_t i = 0; i < count; i+=3)
