@@ -12,10 +12,17 @@
 
 unsigned int BuildShaderProgram();
 void processInput(GLFWwindow* window);
+void updateVertices(float vertices[], size_t count, float angle);
+inline static double convert(double degree)
+{
+    double pi = 3.14159265359;
+    return (degree * (pi / 180));
+}
 
 // settings
 const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_HEIGHT = 800;
+const float length = sqrtf(2.0f) / 2.0f;
 
 int main()
 {
@@ -70,7 +77,8 @@ int main()
     ebo.AllocateData(std::span(indices, indexCount));
 
     vbo.Bind();
-    vbo.AllocateData(std::span(vertices, sizeof(vertices) / sizeof(unsigned int)));
+    auto vertexCount = sizeof(vertices) / sizeof(float);
+    vbo.AllocateData(std::span(vertices, vertexCount));
 
     VertexAttribute position(Data::Type::Float, 3);
 
@@ -87,12 +95,22 @@ int main()
     // uncomment this call to draw in wireframe polygons.
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+    float time = 0.0f;
+    float rotationSpeed = 0.1f;
+
     // render loop
     // -----------
     while (!window.ShouldClose())
     {
         processInput(window.GetInternalWindow());
 
+        //update
+        float angle = time * rotationSpeed;
+
+        vbo.Bind();
+        updateVertices(vertices, vertexCount, angle);
+        vbo.UpdateData(std::span(vertices, vertexCount), 0);
+        vbo.Unbind();
         // render
         // ------
         device.Clear(.5f, 0.25f, .75f, 1.0f);
@@ -106,6 +124,7 @@ int main()
         // -------------------------------------------------------------------------------
         window.SwapBuffers();
         device.PollEvents();
+        time += .1f;
     }
 
     // optional: de-allocate all resources once they've outlived their purpose:
@@ -122,6 +141,20 @@ void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+}
+
+void updateVertices(float vertices[], size_t count, float angle)
+{
+    for (size_t i = 0; i < count; i+=3)
+    {
+        // x
+        vertices[i] = std::sin(angle) * length;
+        // y
+        vertices[i + 1] = std::cos(angle) * length;
+        // z
+        vertices[i + 2] = 0.0f;
+        angle += convert(90);
+    }
 }
 
 unsigned int BuildShaderProgram()
