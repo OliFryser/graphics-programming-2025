@@ -145,6 +145,7 @@ void processInput(GLFWwindow* window)
 
 void updateVertices(float vertices[], size_t count, float angle)
 {
+    angle += convert(45);
     for (size_t i = 0; i < count; i+=3)
     {
         // x
