@@ -54,7 +54,7 @@ int main()
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
-    std::vector<float> vertices {
+    std::vector<float> vertices = {
         -0.5f, -0.5f, 0.0f, // bottom left  
          0.5f, -0.5f, 0.0f, // bottom right 
          0.5f,  0.5f, 0.0f,  // top right
@@ -113,9 +113,7 @@ int main()
         // draw our first triangle
         glUseProgram(shaderProgram);
         vao.Bind(); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-        /*ebo.Bind();*/
-        std::cout << vertices.size() << std::endl;
-        
+
         glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -125,14 +123,12 @@ int main()
         time += .1f;
 
         vao.Unbind();
-        /*ebo.Unbind();*/
     }
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
     glDeleteProgram(shaderProgram);
 
-    
     return 0;
 }
 
