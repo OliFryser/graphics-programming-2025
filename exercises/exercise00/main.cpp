@@ -14,15 +14,24 @@
 #include "Utils.h"
 #include "Circle.h"
 
+struct Vector2 {
+    float x, y;
+};
+
 unsigned int BuildShaderProgram();
 void processInput(GLFWwindow* window);
 void updateVertices(std::vector<float>& vertices, float angle);
 void printVector(std::vector<float> vertices);
+Vector2 GetMovementVector(float movementSpeed);
+
 
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 800;
 const float length = sqrtf(2.0f) / 2.0f;
+
+// input variables
+bool left, right, up, down;
 
 int main()
 {
@@ -97,6 +106,7 @@ int main()
 
     float time = 0.0f;
     float rotationSpeed = 0.1f;
+    float movementSpeed = 0.05f;
 
     // render loop
     // -----------
@@ -105,14 +115,12 @@ int main()
         processInput(window.GetInternalWindow());
 
         //update
-        /*
-        float angle = time * rotationSpeed;
-        updateVertices(vertices, angle);
+        Vector2 movementVector = GetMovementVector(movementSpeed);
+        circle.TranslateCircle(movementVector.x, movementVector.y);
 
         vbo.Bind();
-        vbo.UpdateData<const float>(vertices, 0);
+        vbo.UpdateData<const float>(circle.vertices, 0);
         vbo.Unbind();
-        */
 
         // render
         // ------
@@ -146,6 +154,12 @@ void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    left = glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS;
+    right = glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
+    up = glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS;
+    down = glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS;
+
 }
 
 void updateVertices(std::vector<float>& vertices, float angle)
@@ -168,6 +182,27 @@ void printVector(std::vector<float> vector)
     for (const auto element : vector)
         std::cout << element << " ";
     std::cout << std::endl;
+}
+
+Vector2 GetMovementVector(float movementSpeed)
+{
+    Vector2 movementVector{};
+
+    if (up && down)
+        movementVector.y = 0.0f;
+    else if (up)
+        movementVector.y = movementSpeed;
+    else if (down)
+        movementVector.y = -movementSpeed;
+    
+    if (left && right)
+        movementVector.x = 0.0f;
+    else if (left)
+        movementVector.x = -movementSpeed;
+    else if (right)
+        movementVector.x = movementSpeed;
+    
+    return movementVector;
 }
 
 std::vector<float> createCircleVertices(float radius, int detail)

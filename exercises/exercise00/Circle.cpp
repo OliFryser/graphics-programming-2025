@@ -4,7 +4,7 @@
 
 #include "Utils.h"
 
-Circle::Circle(float radius, int detail) : _radius(radius)
+Circle::Circle(float radius, int detail) : m_Radius(radius)
 {
 	float angle = 0.0f;
 	float anglePerVertex = 360.0f / detail;
@@ -20,6 +20,15 @@ Circle::Circle(float radius, int detail) : _radius(radius)
 		AddVertexForTriangle(angle);
 		AddTriangleIndices(0, index, index + 1);
 		index++;
+	}
+}
+
+void Circle::TranslateCircle(float xTranslation, float yTranslation)
+{
+	for (size_t i = 0; i < vertices.size(); i += 3)
+	{
+		vertices[i] += xTranslation;
+		vertices[i + 1] += yTranslation;
 	}
 }
 
@@ -40,8 +49,8 @@ void Circle::AddTriangleIndices(unsigned int first, unsigned int second, unsigne
 void Circle::AddVertexForTriangle(float angle)
 {
 	float angleInRadians = ConvertDegreesToRadians(angle);
-	float x = sin(angleInRadians) * _radius;
-	float y = cos(angleInRadians) * _radius;
+	float x = sin(angleInRadians) * m_Radius;
+	float y = cos(angleInRadians) * m_Radius;
 	float z = 0.0f;
 	AddVertex(x, y, z);
 }
