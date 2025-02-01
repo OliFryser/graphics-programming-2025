@@ -61,7 +61,7 @@ int main()
         -0.5f, 0.5f, 0.0f, // top left
     };
     
-    std::vector<float> indices {
+    std::vector<unsigned int> indices {
         0, 1, 2, // first triangle
         2, 0, 3 // second triangle
     };
@@ -77,7 +77,7 @@ int main()
     vbo.AllocateData<const float>(vertices);
 
     ebo.Bind();
-    ebo.AllocateData<const float>(indices);
+    ebo.AllocateData<const unsigned int>(indices);
     
     VertexAttribute position(Data::Type::Float, 3);
 
@@ -113,7 +113,9 @@ int main()
         // draw our first triangle
         glUseProgram(shaderProgram);
         vao.Bind(); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-
+        /*ebo.Bind();*/
+        std::cout << vertices.size() << std::endl;
+        
         glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -121,6 +123,9 @@ int main()
         window.SwapBuffers();
         device.PollEvents();
         time += .1f;
+
+        vao.Unbind();
+        /*ebo.Unbind();*/
     }
 
     // optional: de-allocate all resources once they've outlived their purpose:

@@ -18,14 +18,14 @@ BufferObject::~BufferObject()
 void BufferObject::Bind(Target target) const
 {
     Handle handle = GetHandle();
-    glBindBuffer(GL_ARRAY_BUFFER, handle);
+    glBindBuffer(target, handle);
 }
 
 // Bind the null handle to the specific target
 void BufferObject::Unbind(Target target)
 {
     Handle handle = NullHandle;
-    glBindBuffer(GL_ARRAY_BUFFER, handle);
+    glBindBuffer(target, handle);
 }
 
 // Get buffer Target and allocate buffer data
