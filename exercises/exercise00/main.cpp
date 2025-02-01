@@ -11,14 +11,13 @@
 #include <iostream>
 #include <vector>
 
+#include "Utils.h"
+#include "Circle.h"
+
 unsigned int BuildShaderProgram();
 void processInput(GLFWwindow* window);
-void updateVertices(float vertices[], size_t count, float angle);
-inline static double convert(double degree)
-{
-    double pi = 3.14159265359;
-    return (degree * (pi / 180));
-}
+void updateVertices(std::vector<float>& vertices, float angle);
+void printVector(std::vector<float> vertices);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -66,6 +65,8 @@ int main()
         2, 0, 3 // second triangle
     };
 
+    Circle circle(.5f, 100);
+
     VertexBufferObject vbo;
     VertexArrayObject vao;
     ElementBufferObject ebo;
@@ -74,10 +75,10 @@ int main()
     vao.Bind();
   
     vbo.Bind();
-    vbo.AllocateData<const float>(vertices);
+    vbo.AllocateData<const float>(circle.vertices);
 
     ebo.Bind();
-    ebo.AllocateData<const unsigned int>(indices);
+    ebo.AllocateData<const unsigned int>(circle.indices);
     
     VertexAttribute position(Data::Type::Float, 3);
 
@@ -104,7 +105,14 @@ int main()
         processInput(window.GetInternalWindow());
 
         //update
+        /*
         float angle = time * rotationSpeed;
+        updateVertices(vertices, angle);
+
+        vbo.Bind();
+        vbo.UpdateData<const float>(vertices, 0);
+        vbo.Unbind();
+        */
 
         // render
         // ------
@@ -114,7 +122,7 @@ int main()
         glUseProgram(shaderProgram);
         vao.Bind(); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
 
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, circle.indices.size(), GL_UNSIGNED_INT, 0);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -140,10 +148,10 @@ void processInput(GLFWwindow* window)
         glfwSetWindowShouldClose(window, true);
 }
 
-void updateVertices(float vertices[], size_t count, float angle)
+void updateVertices(std::vector<float>& vertices, float angle)
 {
-    angle += convert(45);
-    for (size_t i = 0; i < count; i+=3)
+    angle += ConvertDegreesToRadians(45);
+    for (size_t i = 0; i < vertices.size(); i+= 3)
     {
         // x
         vertices[i] = std::sin(angle) * length;
@@ -151,8 +159,25 @@ void updateVertices(float vertices[], size_t count, float angle)
         vertices[i + 1] = std::cos(angle) * length;
         // z
         vertices[i + 2] = 0.0f;
-        angle += convert(90);
+        angle += ConvertDegreesToRadians(90);
     }
+}
+
+void printVector(std::vector<float> vector)
+{
+    for (const auto element : vector)
+        std::cout << element << " ";
+    std::cout << std::endl;
+}
+
+std::vector<float> createCircleVertices(float radius, int detail)
+{
+    return std::vector<float>();
+}
+
+std::vector<unsigned int> createCircleIndices(float radius)
+{
+    return std::vector<unsigned int>();
 }
 
 unsigned int BuildShaderProgram()
