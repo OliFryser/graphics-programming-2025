@@ -21,7 +21,7 @@ struct Vector2 {
 unsigned int BuildShaderProgram();
 void processInput(GLFWwindow* window);
 void updateVertices(std::vector<float>& vertices, float angle);
-void printVector(std::vector<float> vertices);
+void printVector(std::vector<float> vector);
 Vector2 GetMovementVector(float movementSpeed);
 
 

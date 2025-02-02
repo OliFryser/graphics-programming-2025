@@ -10,16 +10,13 @@ Circle::Circle(float radius, int detail) : m_Radius(radius)
 	float anglePerVertex = 360.0f / detail;
 
 	AddVertex(0.0f, 0.0f, 0.0f);
-	AddVertexForTriangle(angle);
-
-	int index = 1; 
+	AddVertexAtAngle(angle);
 	
 	for (int i = 0; i < detail; i++)
 	{
 		angle += anglePerVertex;
-		AddVertexForTriangle(angle);
-		AddTriangleIndices(0, index, index + 1);
-		index++;
+		AddVertexAtAngle(angle);
+		AddTriangleIndices(0, i + 1, i + 2);
 	}
 }
 
@@ -46,7 +43,7 @@ void Circle::AddTriangleIndices(unsigned int first, unsigned int second, unsigne
 	indices.push_back(third);
 }
 
-void Circle::AddVertexForTriangle(float angle)
+void Circle::AddVertexAtAngle(float angle)
 {
 	float angleInRadians = ConvertDegreesToRadians(angle);
 	float x = sin(angleInRadians) * m_Radius;

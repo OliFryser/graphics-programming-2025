@@ -21,5 +21,5 @@ private:
 
 	void AddVertex(float x, float y, float z);
 	void AddTriangleIndices(unsigned int first, unsigned int second, unsigned int third);
-	void AddVertexForTriangle(float angle);
+	void AddVertexAtAngle(float angle);
 };
