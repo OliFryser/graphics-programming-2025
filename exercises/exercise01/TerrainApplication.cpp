@@ -39,6 +39,11 @@ TerrainApplication::TerrainApplication()
 {
 }
 
+TerrainApplication::TerrainApplication(unsigned int gridX, unsigned int gridY)
+    : Application(800, 800, "Terrain demo"), m_gridX(gridX), m_gridY(gridY), m_shaderProgram(0)
+{
+}
+
 void TerrainApplication::Initialize()
 {
     Application::Initialize();
@@ -46,24 +51,52 @@ void TerrainApplication::Initialize()
     // Build shaders and store in m_shaderProgram
     BuildShaders();
 
-    std::vector<Vector3> vertices;
+    std::vector<Vector2> uvs;
 
-    for (int y = 0; y <= m_gridY; y++)
+    std::vector<Vector3> vertices;
+    float scaleX = 1.0f / float(m_gridX);
+    float scaleY = 1.0f / float(m_gridY);
+
+    const Vector2 bottomLeftUV(0.0f, 0.0f);
+    const Vector2 bottomRightUV(1.0f, 0.0f);
+    const Vector2 topLeftUV(0.0f, 1.0f);
+    const Vector2 topRightUV(1.0f, 1.0f);
+    
+    for (int y = 0; y <= m_gridY - 1; y++)
     {
-        for (int x = 0; x <= m_gridX; x++)
+        for (int x = 0; x <= m_gridX - 1; x++)
         {
-            Vector3 bottomLeft(x, y, 0.0f);
-            Vector3 bottomRight(x + 1.0f, y, 0.0f);
-            Vector3 topLeft(x, y + 1.0f, 0.0f);
-            Vector3 topRight(x + 1.0f, y + 1.0f, 0.0f);
+            Vector3 bottomLeft(
+                x * scaleX - .5f,
+                y * scaleY - .5f,
+                0.0f);
+            Vector3 bottomRight(
+                (x + 1.0f) * scaleX - .5f,
+                y * scaleY - .5f,
+                0.0f);
+            Vector3 topLeft(
+                x * scaleX - .5f,
+                (y + 1.0f) * scaleY - .5f,
+                0.0f);
+            Vector3 topRight(
+                (x + 1.0f) * scaleX - .5f,
+                (y + 1.0f) * scaleY - .5f,
+                0.0f);
+
             // first triangle
             vertices.push_back(bottomLeft);
+            uvs.push_back(bottomLeftUV);
             vertices.push_back(topLeft);
-            vertices.push_back(topRight); 
+            uvs.push_back(topLeftUV);
+            vertices.push_back(topRight);
+            uvs.push_back(topRightUV);
             // second triangle
             vertices.push_back(topRight);
+            uvs.push_back(topRightUV);
             vertices.push_back(bottomRight);
+            uvs.push_back(bottomRightUV);
             vertices.push_back(bottomLeft);
+            uvs.push_back(bottomLeftUV);
         }
     }
 
@@ -71,10 +104,17 @@ void TerrainApplication::Initialize()
     m_vao.Bind();
     
     m_vbo.Bind();
-    m_vbo.AllocateData<const Vector3>(vertices);
+    m_vbo.AllocateData(vertices.size() * sizeof(Vector3) + uvs.size() * sizeof(Vector2));
+    
+    m_vbo.UpdateData<const Vector3>(vertices, 0);
+    m_vbo.UpdateData<const Vector2>(uvs, vertices.size() * sizeof(Vector3));
+
+    std::cout << "Sizeof Vector2: " << sizeof(Vector2) << "\nSizeof Vector3: " << sizeof(Vector3) << std::endl;
 
     VertexAttribute position(Data::Type::Float, 3);
     m_vao.SetAttribute(0, position, 0);
+    VertexAttribute uv(Data::Type::Float, 2);
+    m_vao.SetAttribute(1, uv, vertices.size() * sizeof(Vector3));
     
     // (todo) 01.5: Initialize EBO
 
@@ -85,6 +125,8 @@ void TerrainApplication::Initialize()
 
     // (todo) 01.5: Unbind EBO
 
+    // uncomment this call to draw in wireframe polygons.
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
 void TerrainApplication::Update()
@@ -107,7 +149,7 @@ void TerrainApplication::Render()
     // (todo) 01.1: Draw the grid
     m_vao.Bind();
     
-    glDrawArrays(GL_TRIANGLES, 0, m_gridX * m_gridY * 3);
+    glDrawArrays(GL_TRIANGLES, 0, m_gridX * m_gridY * 6);
     
     m_vao.Unbind();
 }
