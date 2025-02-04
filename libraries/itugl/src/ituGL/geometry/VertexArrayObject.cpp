@@ -27,7 +27,7 @@ void VertexArrayObject::Bind() const
 void VertexArrayObject::Unbind()
 {
     Handle handle = NullHandle;
-    glBindVertexArray(0);
+    glBindVertexArray(handle);
 }
 
 // Sets the VertexAttribute pointer and enables the VertexAttribute in that location
@@ -42,8 +42,9 @@ void VertexArrayObject::SetAttribute(GLuint location, const VertexAttribute& att
     const unsigned char* pointer = nullptr; // Actual base pointer is in VBO
     pointer += offset;
 
-    // (todo) 00.1: Set the VertexAttribute pointer in that location
-    glVertexAttribPointer(location, components, type, normalized, attribute.GetSize(), pointer);
-    // (todo) 00.1: Finally, we enable the VertexAttribute in that location
-    glEnableVertexAttribArray(0);
+    // Set the VertexAttribute pointer in this location
+    glVertexAttribPointer(location, components, type, normalized, stride, pointer);
+
+    // Finally, we enable the VertexAttribute in this location
+    glEnableVertexAttribArray(location);
 }

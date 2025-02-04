@@ -9,7 +9,6 @@
 #include <ituGL/geometry/ElementBufferObject.h>
 
 #include <iostream>
-#include <vector>
 
 #include "Utils.h"
 #include "Circle.h"
@@ -27,8 +26,7 @@ Vector2 GetMovementVector(float movementSpeed);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 800;
-const float length = sqrtf(2.0f) / 2.0f;
+const unsigned int SCR_HEIGHT = 600;
 
 // input variables
 bool left, right, up, down;
@@ -62,44 +60,31 @@ int main()
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
-    std::vector<float> vertices = {
-        -0.5f, -0.5f, 0.0f, // bottom left  
-         0.5f, -0.5f, 0.0f, // bottom right 
-         0.5f,  0.5f, 0.0f,  // top right
-        -0.5f, 0.5f, 0.0f, // top left
-    };
-    
-    std::vector<unsigned int> indices {
-        0, 1, 2, // first triangle
-        2, 0, 3 // second triangle
+    float vertices[] = {
+        -0.5f, -0.5f, 0.0f, // left  
+         0.5f, -0.5f, 0.0f, // right 
+         0.0f,  0.5f, 0.0f  // top   
     };
 
-    Circle circle(.5f, 100);
-
-    VertexBufferObject vbo;
-    VertexArrayObject vao;
-    ElementBufferObject ebo;
-
+    unsigned int VBO, VAO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    vao.Bind();
-  
-    vbo.Bind();
-    vbo.AllocateData<const float>(circle.vertices);
+    glBindVertexArray(VAO);
 
-    ebo.Bind();
-    ebo.AllocateData<const unsigned int>(circle.indices);
-    
-    VertexAttribute position(Data::Type::Float, 3);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    vao.SetAttribute(0, position, 0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
 
     // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
-    vbo.Unbind();
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
     // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-    vao.Unbind();
-    ebo.Unbind();
+    glBindVertexArray(0);
+
 
     // uncomment this call to draw in wireframe polygons.
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -124,11 +109,13 @@ int main()
 
         // render
         // ------
-        device.Clear(.5f, 0.25f, .75f, 1.0f);
+        deviceGL.Clear(0.2f, 0.3f, 0.3f, 1.0f);
 
         // draw our first triangle
         glUseProgram(shaderProgram);
-        vao.Bind(); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
+        glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        // glBindVertexArray(0); // no need to unbind it every time 
 
         glDrawElements(GL_TRIANGLES, circle.indices.size(), GL_UNSIGNED_INT, 0);
 
