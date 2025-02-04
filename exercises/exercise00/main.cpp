@@ -9,6 +9,7 @@
 #include <ituGL/geometry/ElementBufferObject.h>
 
 #include <iostream>
+#include <vector>
 
 #include "Utils.h"
 #include "Circle.h"
@@ -20,13 +21,15 @@ struct Vector2 {
 unsigned int BuildShaderProgram();
 void processInput(GLFWwindow* window);
 void updateVertices(std::vector<float>& vertices, float angle);
+void printVector(std::vector<float> vertices);
 void printVector(std::vector<float> vector);
 Vector2 GetMovementVector(float movementSpeed);
 
 
 // settings
 const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_HEIGHT = 800;
+const float length = sqrtf(2.0f) / 2.0f;
 
 // input variables
 bool left, right, up, down;
@@ -37,9 +40,9 @@ int main()
 
     // glfw window creation
     // --------------------
-    
+
     Window window(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL");
-    
+
     if (!window.IsValid())
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -60,31 +63,44 @@ int main()
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
-    float vertices[] = {
-        -0.5f, -0.5f, 0.0f, // left  
-         0.5f, -0.5f, 0.0f, // right 
-         0.0f,  0.5f, 0.0f  // top   
+    std::vector<float> vertices = {
+        -0.5f, -0.5f, 0.0f, // bottom left  
+         0.5f, -0.5f, 0.0f, // bottom right 
+         0.5f,  0.5f, 0.0f,  // top right
+        -0.5f, 0.5f, 0.0f, // top left
     };
 
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
+    std::vector<unsigned int> indices{
+        0, 1, 2, // first triangle
+        2, 0, 3 // second triangle
+    };
+
+    Circle circle(.5f, 100);
+
+    VertexBufferObject vbo;
+    VertexArrayObject vao;
+    ElementBufferObject ebo;
+
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO);
+    vao.Bind();
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    vbo.Bind();
+    vbo.AllocateData<const float>(circle.vertices);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
+    ebo.Bind();
+    ebo.AllocateData<const unsigned int>(circle.indices);
+
+    VertexAttribute position(Data::Type::Float, 3);
+
+    vao.SetAttribute(0, position, 0);
 
     // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    vbo.Unbind();
 
     // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
     // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-    glBindVertexArray(0);
-
+    vao.Unbind();
+    ebo.Unbind();
 
     // uncomment this call to draw in wireframe polygons.
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -109,13 +125,11 @@ int main()
 
         // render
         // ------
-        deviceGL.Clear(0.2f, 0.3f, 0.3f, 1.0f);
+        device.Clear(.5f, 0.25f, .75f, 1.0f);
 
         // draw our first triangle
         glUseProgram(shaderProgram);
-        glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        // glBindVertexArray(0); // no need to unbind it every time 
+        vao.Bind(); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
 
         glDrawElements(GL_TRIANGLES, circle.indices.size(), GL_UNSIGNED_INT, 0);
 
@@ -152,7 +166,7 @@ void processInput(GLFWwindow* window)
 void updateVertices(std::vector<float>& vertices, float angle)
 {
     angle += ConvertDegreesToRadians(45);
-    for (size_t i = 0; i < vertices.size(); i+= 3)
+    for (size_t i = 0; i < vertices.size(); i += 3)
     {
         // x
         vertices[i] = std::sin(angle) * length;
@@ -181,14 +195,14 @@ Vector2 GetMovementVector(float movementSpeed)
         movementVector.y = movementSpeed;
     else if (down)
         movementVector.y = -movementSpeed;
-    
+
     if (left && right)
         movementVector.x = 0.0f;
     else if (left)
         movementVector.x = -movementSpeed;
     else if (right)
         movementVector.x = movementSpeed;
-    
+
     return movementVector;
 }
 
