@@ -4,6 +4,10 @@
 
 #include <cmath>
 #include <iostream>
+#include <vector>
+
+#include "ituGL/core/Data.h"
+#include "ituGL/geometry/VertexAttribute.h"
 
 // Helper structures. Declared here only for this exercise
 struct Vector2
@@ -31,7 +35,7 @@ struct Vector3
 
 
 TerrainApplication::TerrainApplication()
-    : Application(1024, 1024, "Terrain demo"), m_gridX(16), m_gridY(16), m_shaderProgram(0)
+    : Application(800, 800, "Terrain demo"), m_gridX(16), m_gridY(16), m_shaderProgram(0)
 {
 }
 
@@ -42,20 +46,29 @@ void TerrainApplication::Initialize()
     // Build shaders and store in m_shaderProgram
     BuildShaders();
 
-    // (todo) 01.1: Create containers for the vertex position
-
-
-    // (todo) 01.1: Fill in vertex data
-
+    for (int y = 0; y < m_gridY; y++)
+    {
+        for (int x = 0; x < m_gridX; x++)
+        {
+            m_vertices.push_back(Vector3(x, y, 0.0f));
+        }
+    }
 
     // (todo) 01.1: Initialize VAO, and VBO
+    m_vao.Bind();
+    
+    m_vbo.Bind();
+    m_vbo.AllocateData<const Vector3>(m_vertices);
 
-
+    VertexAttribute position(Data::Type::Float, 3);
+    m_vao.SetAttribute(0, position, 0);
+    
     // (todo) 01.5: Initialize EBO
 
 
     // (todo) 01.1: Unbind VAO, and VBO
-
+    m_vao.Unbind();
+    m_vbo.Bind();
 
     // (todo) 01.5: Unbind EBO
 
@@ -79,7 +92,8 @@ void TerrainApplication::Render()
     glUseProgram(m_shaderProgram);
 
     // (todo) 01.1: Draw the grid
-
+    
+    glDrawArrays(GL_TRIANGLES, 0, m_vertices.count() * 3)
 }
 
 void TerrainApplication::Cleanup()
