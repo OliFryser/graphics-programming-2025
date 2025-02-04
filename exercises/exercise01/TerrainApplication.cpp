@@ -46,11 +46,24 @@ void TerrainApplication::Initialize()
     // Build shaders and store in m_shaderProgram
     BuildShaders();
 
-    for (int y = 0; y < m_gridY; y++)
+    std::vector<Vector3> vertices;
+
+    for (int y = 0; y <= m_gridY; y++)
     {
-        for (int x = 0; x < m_gridX; x++)
+        for (int x = 0; x <= m_gridX; x++)
         {
-            m_vertices.push_back(Vector3(x, y, 0.0f));
+            Vector3 bottomLeft(x, y, 0.0f);
+            Vector3 bottomRight(x + 1.0f, y, 0.0f);
+            Vector3 topLeft(x, y + 1.0f, 0.0f);
+            Vector3 topRight(x + 1.0f, y + 1.0f, 0.0f);
+            // first triangle
+            vertices.push_back(bottomLeft);
+            vertices.push_back(topLeft);
+            vertices.push_back(topRight); 
+            // second triangle
+            vertices.push_back(topRight);
+            vertices.push_back(bottomRight);
+            vertices.push_back(bottomLeft);
         }
     }
 
@@ -58,7 +71,7 @@ void TerrainApplication::Initialize()
     m_vao.Bind();
     
     m_vbo.Bind();
-    m_vbo.AllocateData<const Vector3>(m_vertices);
+    m_vbo.AllocateData<const Vector3>(vertices);
 
     VertexAttribute position(Data::Type::Float, 3);
     m_vao.SetAttribute(0, position, 0);
@@ -68,7 +81,7 @@ void TerrainApplication::Initialize()
 
     // (todo) 01.1: Unbind VAO, and VBO
     m_vao.Unbind();
-    m_vbo.Bind();
+    m_vbo.Unbind();
 
     // (todo) 01.5: Unbind EBO
 
@@ -92,8 +105,11 @@ void TerrainApplication::Render()
     glUseProgram(m_shaderProgram);
 
     // (todo) 01.1: Draw the grid
+    m_vao.Bind();
     
-    glDrawArrays(GL_TRIANGLES, 0, m_vertices.count() * 3)
+    glDrawArrays(GL_TRIANGLES, 0, m_gridX * m_gridY * 3);
+    
+    m_vao.Unbind();
 }
 
 void TerrainApplication::Cleanup()

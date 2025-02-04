@@ -28,8 +28,6 @@ private:
     VertexBufferObject m_vbo;
     VertexArrayObject m_vao;
 
-    std::vector<Vector3> m_vertices;
-
     // (todo) 01.5: Declare an EBO
 
 };
