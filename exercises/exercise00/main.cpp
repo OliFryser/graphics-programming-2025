@@ -125,7 +125,8 @@ int main()
 
         // render
         // ------
-        device.Clear(.5f, 0.25f, .75f, 1.0f);
+        const Color backgroundColor(0.0f, 0.5f, 0.5f, 1.0f);
+        device.Clear(backgroundColor);
 
         // draw our first triangle
         glUseProgram(shaderProgram);
