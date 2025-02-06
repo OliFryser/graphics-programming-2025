@@ -9,6 +9,10 @@
 #include "ituGL/core/Data.h"
 #include "ituGL/geometry/VertexAttribute.h"
 
+#define STB_PERLIN_IMPLEMENTATION
+#include "stb_perlin.h"
+
+
 // Helper structures. Declared here only for this exercise
 struct Vector2
 {
@@ -67,10 +71,18 @@ void TerrainApplication::Initialize()
     {
         for (int x = 0; x < m_gridX + 1; x++)
         {
+            float xCoord = x * scaleX - .5f;
+            float yCoord = y * scaleY - .5f;
             Vector3 bottomLeft(
-                x * scaleX - .5f,
-                y * scaleY - .5f,
-                0.0f);
+                xCoord,
+                yCoord,
+                stb_perlin_fbm_noise3(
+                    xCoord,
+                    yCoord,
+                    0.0f,
+                    2.0f, 
+                    .5f, 
+                    6) * 0.35f);
 
             vertices.push_back(bottomLeft); 
             uvs.push_back(Vector2(x, y));
@@ -124,7 +136,7 @@ void TerrainApplication::Initialize()
     m_ebo.Unbind();
 
     // uncomment this call to draw in wireframe polygons.
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
 void TerrainApplication::Update()
