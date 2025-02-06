@@ -35,7 +35,15 @@ struct Vector3
 };
 
 // (todo) 01.8: Declare an struct with the vertex format
+struct Vertex
+{
+    Vertex() : Vertex(Vector3(), Vector2(), Color()) {}
+    Vertex(Vector3 position, Vector2 uv, Color color) : position(position), uv(uv), color(color) {}
 
+    Vector3 position;
+    Vector2 uv;
+    Color color;
+};
 
 
 TerrainApplication::TerrainApplication()
@@ -55,10 +63,8 @@ void TerrainApplication::Initialize()
     // Build shaders and store in m_shaderProgram
     BuildShaders();
 
-    std::vector<Vector3> vertices;
+    std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
-    std::vector<Vector2> uvs;
-    std::vector<Color> colors;
 
     float scaleX = 1.0f / float(m_gridX);
     float scaleY = 1.0f / float(m_gridY);
@@ -72,11 +78,10 @@ void TerrainApplication::Initialize()
             float xCoord = x * scaleX - .5f;
             float yCoord = y * scaleY - .5f;
             float zCoord = stb_perlin_fbm_noise3(xCoord * 2, yCoord * 2, 0.0f, 2.0f, .5f, 6);
-            Vector3 bottomLeft(xCoord, yCoord, zCoord * scalar);
+            Vector3 position(xCoord, yCoord, zCoord * scalar);
+            Vector2 uv(x, y);
 
-            vertices.push_back(bottomLeft); 
-            uvs.push_back(Vector2(x, y));
-            colors.push_back(GetColorFromHeight(zCoord));
+            vertices.push_back(Vertex(position, uv, GetColorFromHeight(zCoord)));
         }
     }
 
@@ -105,18 +110,14 @@ void TerrainApplication::Initialize()
     m_vao.Bind();
     
     m_vbo.Bind();
-    m_vbo.AllocateData(vertices.size() * sizeof(Vector3) + uvs.size() * sizeof(Vector2) + colors.size() * sizeof(Color));
-    
-    m_vbo.UpdateData<const Vector3>(vertices, 0);
-    m_vbo.UpdateData<const Vector2>(uvs, vertices.size() * sizeof(Vector3));
-    m_vbo.UpdateData<const Color>(colors, vertices.size() * sizeof(Vector3) + uvs.size() * sizeof(Vector2));
+    m_vbo.AllocateData<const Vertex>(vertices);
 
     VertexAttribute position(Data::Type::Float, 3);
-    m_vao.SetAttribute(0, position, 0);
+    m_vao.SetAttribute(0, position, 0, sizeof(Vertex));
     VertexAttribute uv(Data::Type::Float, 2);
-    m_vao.SetAttribute(1, uv, vertices.size() * sizeof(Vector3));
+    m_vao.SetAttribute(1, uv, sizeof(Vector3), sizeof(Vertex));
     VertexAttribute color(Data::Type::Float, 4);
-    m_vao.SetAttribute(2, color, vertices.size() * sizeof(Vector3) + uvs.size() * sizeof(Vector2));
+    m_vao.SetAttribute(2, color, sizeof(Vector3) + sizeof(Vector2), sizeof(Vertex));
     
     // (todo) 01.5: Initialize EBO
     m_ebo.Bind();
