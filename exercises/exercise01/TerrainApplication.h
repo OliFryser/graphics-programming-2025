@@ -21,6 +21,7 @@ protected:
 private:
     void BuildShaders();
     void UpdateOutputMode();
+    Color GetColorFromHeight(float height);
 
 private:
     unsigned int m_gridX, m_gridY;

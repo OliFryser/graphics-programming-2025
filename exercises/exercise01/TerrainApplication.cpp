@@ -55,17 +55,15 @@ void TerrainApplication::Initialize()
     // Build shaders and store in m_shaderProgram
     BuildShaders();
 
-    std::vector<Vector2> uvs;
     std::vector<Vector3> vertices;
     std::vector<unsigned int> indices;
+    std::vector<Vector2> uvs;
+    std::vector<Color> colors;
 
     float scaleX = 1.0f / float(m_gridX);
     float scaleY = 1.0f / float(m_gridY);
 
-    const Vector2 bottomLeftUV(0.0f, 0.0f);
-    const Vector2 bottomRightUV(1.0f, 0.0f);
-    const Vector2 topLeftUV(0.0f, 1.0f);
-    const Vector2 topRightUV(1.0f, 1.0f);
+    const float scalar = 0.35f;
     
     for (int y = 0; y < m_gridY + 1; y++)
     {
@@ -73,19 +71,12 @@ void TerrainApplication::Initialize()
         {
             float xCoord = x * scaleX - .5f;
             float yCoord = y * scaleY - .5f;
-            Vector3 bottomLeft(
-                xCoord,
-                yCoord,
-                stb_perlin_fbm_noise3(
-                    xCoord,
-                    yCoord,
-                    0.0f,
-                    2.0f, 
-                    .5f, 
-                    6) * 0.35f);
+            float zCoord = stb_perlin_fbm_noise3(xCoord * 2, yCoord * 2, 0.0f, 2.0f, .5f, 6);
+            Vector3 bottomLeft(xCoord, yCoord, zCoord * scalar);
 
             vertices.push_back(bottomLeft); 
             uvs.push_back(Vector2(x, y));
+            colors.push_back(GetColorFromHeight(zCoord));
         }
     }
 
@@ -114,15 +105,18 @@ void TerrainApplication::Initialize()
     m_vao.Bind();
     
     m_vbo.Bind();
-    m_vbo.AllocateData(vertices.size() * sizeof(Vector3) + uvs.size() * sizeof(Vector2));
+    m_vbo.AllocateData(vertices.size() * sizeof(Vector3) + uvs.size() * sizeof(Vector2) + colors.size() * sizeof(Color));
     
     m_vbo.UpdateData<const Vector3>(vertices, 0);
     m_vbo.UpdateData<const Vector2>(uvs, vertices.size() * sizeof(Vector3));
+    m_vbo.UpdateData<const Color>(colors, vertices.size() * sizeof(Vector3) + uvs.size() * sizeof(Vector2));
 
     VertexAttribute position(Data::Type::Float, 3);
     m_vao.SetAttribute(0, position, 0);
     VertexAttribute uv(Data::Type::Float, 2);
     m_vao.SetAttribute(1, uv, vertices.size() * sizeof(Vector3));
+    VertexAttribute color(Data::Type::Float, 4);
+    m_vao.SetAttribute(2, color, vertices.size() * sizeof(Vector3) + uvs.size() * sizeof(Vector2));
     
     // (todo) 01.5: Initialize EBO
     m_ebo.Bind();
@@ -136,7 +130,9 @@ void TerrainApplication::Initialize()
     m_ebo.Unbind();
 
     // uncomment this call to draw in wireframe polygons.
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    glEnable(GL_DEPTH_TEST);
 }
 
 void TerrainApplication::Update()
@@ -276,4 +272,26 @@ void TerrainApplication::UpdateOutputMode()
         glUseProgram(m_shaderProgram);
         glUniformMatrix4fv(matrixLocation, 1, false, projMatrix);
     }
+}
+
+Color TerrainApplication::GetColorFromHeight(float height)
+{
+    // can be between -1 and 1
+    if (height > .6f)
+        return Color(1.0f, 1.0f, 1.0f, 1.0f);
+    
+    if (height > .4f)
+        return Color(.5f, .5f, .5f, 1.0f);
+
+    if (height > .2f)
+        return Color(0.460f, 0.252f, 0.0138f, 1.0f);
+
+    if (height > -.1f)
+        return Color(0.0893f, 0.470f, 0.0956f, 1.0f);
+
+    if (height > -.3f)
+        return Color(0.970f, 0.940f, 0.611f, 1.0f);
+
+    return Color(0.123f, 0.224f, 0.880f, 1.0f);
+
 }
