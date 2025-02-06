@@ -43,6 +43,7 @@ struct Vertex
     Vector3 position;
     Vector2 uv;
     Color color;
+    Vector3 normal;
 };
 
 
@@ -85,6 +86,30 @@ void TerrainApplication::Initialize()
         }
     }
 
+    for (int y = 0; y < m_gridY + 1; y++)
+    {
+        for (int x = 0; x < m_gridX + 1; x++)
+        {
+            size_t columns = m_gridX + 1;
+            Vertex leftVertex = 
+                x == 0 ? vertices[y * columns + x] : vertices[y * columns + x - 1];
+            Vertex rightVertex = 
+                x == m_gridX ? vertices[y * columns + x] : vertices[y * columns + x + 1];
+            Vertex downVertex =
+                y == 0 ? vertices[y * columns + x] : vertices[(y - 1) * columns + x];
+            Vertex upVertex =
+                y == m_gridY ? vertices[y * columns + x] : vertices[(y + 1) * columns + x];
+
+            float deltaX = 
+                (rightVertex.position.z - leftVertex.position.z) / (rightVertex.position.x - leftVertex.position.x);
+            float deltaY =
+                (upVertex.position.z - downVertex.position.z) / (upVertex.position.y - downVertex.position.y);
+
+            Vector3 normal = Vector3(deltaX, deltaY, 1.0f).Normalize();
+            vertices[y * columns + x].normal = normal;
+        }
+    }
+
     for (int y = 0; y < m_gridY - 1; y++)
     {
         for (int x = 0; x < m_gridX - 1; x++)
@@ -118,7 +143,9 @@ void TerrainApplication::Initialize()
     m_vao.SetAttribute(1, uv, sizeof(Vector3), sizeof(Vertex));
     VertexAttribute color(Data::Type::Float, 4);
     m_vao.SetAttribute(2, color, sizeof(Vector3) + sizeof(Vector2), sizeof(Vertex));
-    
+    VertexAttribute normal(Data::Type::Float, 3);
+    m_vao.SetAttribute(3, normal, sizeof(Vector3) + sizeof(Vector2) + sizeof(Color), sizeof(Vertex));
+
     // (todo) 01.5: Initialize EBO
     m_ebo.Bind();
     m_ebo.AllocateData<const unsigned int>(indices);
