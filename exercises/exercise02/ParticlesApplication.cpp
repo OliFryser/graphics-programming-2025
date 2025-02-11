@@ -16,18 +16,18 @@ struct Particle
     float birth;
     float duration;
     Color color;
-    // (todo) 02.X: Add more vertex attributes
- 
+    glm::vec2 velocity;
 };
 
 // List of attributes of the particle. Must match the structure above
-const std::array<VertexAttribute, 5> s_vertexAttributes =
+const std::array<VertexAttribute, 6> s_vertexAttributes =
 {
     VertexAttribute(Data::Type::Float, 2), // position
     VertexAttribute(Data::Type::Float, 1), // size
     VertexAttribute(Data::Type::Float, 1), // birth
     VertexAttribute(Data::Type::Float, 1), // duration
     VertexAttribute(Data::Type::Float, 4), // color
+    VertexAttribute(Data::Type::Float, 2), // velocity
 };
 
 
@@ -45,6 +45,7 @@ void ParticlesApplication::Initialize()
     InitializeShaders();
 
     m_currentTimeUniformLocation = m_shaderProgram.GetUniformLocation("CurrentTime");
+    m_gravityUniformLocation = m_shaderProgram.GetUniformLocation("Gravity");
 
     // Initialize the mouse position with the current position of the mouse
     m_mousePosition = GetMainWindow().GetMousePosition(true);
@@ -73,7 +74,8 @@ void ParticlesApplication::Update()
         float size = RandomRange(5.0f, 20.0f);
         float duration = RandomRange(1.0f, 2.0f);
         Color color = RandomColor();
-        EmitParticle(mousePosition, size, duration, color);
+        glm::vec2 velocity = (mousePosition - m_mousePosition) / GetDeltaTime() * 0.7f;
+        EmitParticle(mousePosition, size, duration, color, velocity);
     }
 
     // save the mouse position (to compare next frame and obtain velocity)
@@ -91,7 +93,7 @@ void ParticlesApplication::Render()
     m_shaderProgram.SetUniform(m_currentTimeUniformLocation, GetCurrentTime());
 
     // (todo) 02.6: Set Gravity uniform
-
+    m_shaderProgram.SetUniform(m_gravityUniformLocation, m_gravity);
 
     // Bind the particle system VAO
     m_vao.Bind();
@@ -156,7 +158,8 @@ void ParticlesApplication::EmitParticle(
     const glm::vec2& position,
     const float size,
     const float duration, 
-    const Color color)
+    const Color& color,
+    const glm::vec2& velocity)
 {
     // Initialize the particle
     Particle particle;
@@ -164,6 +167,7 @@ void ParticlesApplication::EmitParticle(
     particle.size = size;
     particle.duration = duration;
     particle.color = color;
+    particle.velocity = velocity;
     particle.birth = GetCurrentTime();
 
     // Get the index in the circular buffer
