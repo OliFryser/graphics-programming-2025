@@ -23,7 +23,7 @@ struct Vector2
 
 struct Vector3
 {
-    Vector3() : Vector3(0.f,0.f,0.f) {}
+    Vector3() : Vector3(0.f, 0.f, 0.f) {}
     Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
     float x, y, z;
 
@@ -71,7 +71,7 @@ void TerrainApplication::Initialize()
     float scaleY = 1.0f / float(m_gridY);
 
     const float scalar = 0.35f;
-    
+
     for (int y = 0; y < m_gridY + 1; y++)
     {
         for (int x = 0; x < m_gridX + 1; x++)
@@ -91,16 +91,16 @@ void TerrainApplication::Initialize()
         for (int x = 0; x < m_gridX + 1; x++)
         {
             size_t columns = m_gridX + 1;
-            Vertex leftVertex = 
+            Vertex leftVertex =
                 x == 0 ? vertices[y * columns + x] : vertices[y * columns + x - 1];
-            Vertex rightVertex = 
+            Vertex rightVertex =
                 x == m_gridX ? vertices[y * columns + x] : vertices[y * columns + x + 1];
             Vertex downVertex =
                 y == 0 ? vertices[y * columns + x] : vertices[(y - 1) * columns + x];
             Vertex upVertex =
                 y == m_gridY ? vertices[y * columns + x] : vertices[(y + 1) * columns + x];
 
-            float deltaX = 
+            float deltaX =
                 (rightVertex.position.z - leftVertex.position.z) / (rightVertex.position.x - leftVertex.position.x);
             float deltaY =
                 (upVertex.position.z - downVertex.position.z) / (upVertex.position.y - downVertex.position.y);
@@ -133,9 +133,9 @@ void TerrainApplication::Initialize()
 
     // (todo) 01.1: Initialize VAO, and VBO
     m_vao.Bind();
-    
+
     m_vbo.Bind();
-    m_vbo.AllocateData<const Vertex>(vertices);
+    m_vbo.AllocateData(std::span(vertices));
 
     VertexAttribute position(Data::Type::Float, 3);
     m_vao.SetAttribute(0, position, 0, sizeof(Vertex));
@@ -148,7 +148,7 @@ void TerrainApplication::Initialize()
 
     // (todo) 01.5: Initialize EBO
     m_ebo.Bind();
-    m_ebo.AllocateData<const unsigned int>(indices);
+    m_ebo.AllocateData(std::span(indices));
 
     // (todo) 01.1: Unbind VAO, and VBO
     m_vao.Unbind();
@@ -182,9 +182,9 @@ void TerrainApplication::Render()
 
     // (todo) 01.1: Draw the grid
     m_vao.Bind();
-    
+
     glDrawElements(GL_TRIANGLES, m_gridX * m_gridY * 3 * 2, GL_UNSIGNED_INT, 0);
-    
+
     m_vao.Unbind();
 }
 
@@ -307,7 +307,7 @@ Color TerrainApplication::GetColorFromHeight(float height)
     // can be between -1 and 1
     if (height > .6f)
         return Color(1.0f, 1.0f, 1.0f, 1.0f);
-    
+
     if (height > .4f)
         return Color(.5f, .5f, .5f, 1.0f);
 

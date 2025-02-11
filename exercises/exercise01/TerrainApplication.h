@@ -32,6 +32,4 @@ private:
     VertexArrayObject m_vao;
     ElementBufferObject m_ebo;
 
-    // (todo) 01.5: Declare an EBO
-
 };
