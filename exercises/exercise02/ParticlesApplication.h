@@ -26,7 +26,7 @@ private:
     void LoadAndCompileShader(Shader& shader, const char* path);
 
     // Emit a new particle
-    void EmitParticle(const glm::vec2& position, const float size, const float duration);
+    void EmitParticle(const glm::vec2& position, const float size, const float duration, const Color color);
 
     // Helper methods for random values
     static float Random01();
