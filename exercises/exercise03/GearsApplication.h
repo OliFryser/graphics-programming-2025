@@ -50,7 +50,11 @@ private:
     ShaderProgram::Location m_colorUniform;
 
     // (todo) 03.1: Add the world matrix uniform
+    ShaderProgram::Location m_worldMatrixUniform;
+    float m_rotationSpeed;
+    float m_largeRotationAngle, m_mediumRotationAngle;
 
+    int m_largeCogCount, m_mediumCogCount, m_smallCogCount;
 
     // (todo) 03.5: Add the viewProj matrix uniform
 
