@@ -49,6 +49,12 @@ private:
     // Particles shader program
     ShaderProgram m_shaderProgram;
 
+    // Location of the "CurrentTime" uniform
+    ShaderProgram::Location m_currentTimeUniform;
+
+    // Location of the "Gravity" uniform
+    ShaderProgram::Location m_gravityUniform;
+
     // Mouse position during this frame
     glm::vec2 m_mousePosition;
 
