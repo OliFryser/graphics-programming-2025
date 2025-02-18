@@ -4,11 +4,12 @@
 
 #include <ituGL/shader/ShaderProgram.h>
 #include <ituGL/geometry/Mesh.h>
+#include <ituGL/camera/Camera.h>
 
 class GearsApplication : public Application
 {
 public:
-    GearsApplication();
+    GearsApplication(int width, int height);
 
 protected:
     void Initialize() override;
@@ -47,18 +48,12 @@ private:
     ShaderProgram m_shaderProgram;
 
     // Shader uniform locations
-    ShaderProgram::Location m_colorUniform;
-
-    // (todo) 03.1: Add the world matrix uniform
-    ShaderProgram::Location m_worldMatrixUniform;
+    ShaderProgram::Location m_colorUniform, m_worldMatrixUniform, m_viewProjMatrixUniform;
     float m_rotationSpeed;
     float m_largeRotationAngle, m_mediumRotationAngle, m_smallRotationAngle;
 
     int m_largeCogCount, m_mediumCogCount, m_smallCogCount;
-
-    // (todo) 03.5: Add the viewProj matrix uniform
-
-
-    // (todo) 03.4: Add the camera
+    
+    Camera m_camera;
 
 };

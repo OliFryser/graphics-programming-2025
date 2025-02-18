@@ -12,8 +12,8 @@
 #include <numbers>  // for PI constant
 #include <glm/gtx/transform.hpp>  // for matrix transformations
 
-GearsApplication::GearsApplication()
-    : Application(900, 900, "Gears demo")
+GearsApplication::GearsApplication(int width, int height)
+    : Application(width, height, "Gears demo")
     , m_colorUniform(-1)
     , m_rotationSpeed(1.0f)
     , m_largeRotationAngle(0.0f)
@@ -22,6 +22,7 @@ GearsApplication::GearsApplication()
     , m_largeCogCount(16)
     , m_mediumCogCount(8)
     , m_smallCogCount(30)
+    , m_camera()
 {
 }
 
@@ -41,9 +42,16 @@ void GearsApplication::Update()
     Application::Update();
 
     const Window& window = GetMainWindow();
-
+    int width, height;
+    window.GetDimensions(width, height);
     // (todo) 03.5: Update the camera matrices
-
+    float aspect = static_cast<float>(width) / static_cast<float>(height);
+    std::cout << "Aspect: " << aspect;
+    
+    m_camera.SetOrthographicProjectionMatrix(glm::vec3(-aspect, -1.0f, -3.0f), glm::vec3(aspect, 1.0f, 3.0f));
+    
+    glm::vec2 mousePos = window.GetMousePosition(true);
+    m_camera.SetViewMatrix(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(mousePos.x, mousePos.y, 0.0f));
 }
 
 void GearsApplication::Render()
@@ -55,7 +63,7 @@ void GearsApplication::Render()
     m_shaderProgram.Use();
 
     // (todo) 03.5: Set the view projection matrix from the camera. Once set, we will use it for all the objects
-
+    m_shaderProgram.SetUniform(m_viewProjMatrixUniform, m_camera.GetViewProjectionMatrix());
 
     m_largeRotationAngle += m_rotationSpeed * GetDeltaTime();
 
@@ -77,7 +85,6 @@ void GearsApplication::Render()
     glm::mat4 leftTranslationMatrix = glm::translate(glm::vec3(-1.0f, 1.0f, 0.0f));
     DrawGear(m_smallGear, leftTranslationMatrix * leftRotationMatrix * leftScaleMatrix, Color(.2f, .2f, .8f));
 
-    // (todo) 03.4: Draw small gear linked to the center gear
     glm::mat4 linkedTranslationMatrix = glm::translate(glm::vec3(.0f, .2f, .0f));
     DrawGear(m_smallGear, centerGearMatrix * rotationMatrix * linkedTranslationMatrix, Color(.8f, .8f, .2f));
 
@@ -115,7 +122,7 @@ void GearsApplication::InitializeShaders()
     m_worldMatrixUniform = m_shaderProgram.GetUniformLocation("WorldMatrix");
 
     // (todo) 03.5: Find the ViewProjMatrix uniform location
-
+    m_viewProjMatrixUniform = m_shaderProgram.GetUniformLocation("ViewProjMatrix");
 
 }
 
