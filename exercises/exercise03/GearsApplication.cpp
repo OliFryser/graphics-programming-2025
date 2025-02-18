@@ -46,12 +46,12 @@ void GearsApplication::Update()
     window.GetDimensions(width, height);
     // (todo) 03.5: Update the camera matrices
     float aspect = static_cast<float>(width) / static_cast<float>(height);
-    std::cout << "Aspect: " << aspect;
     
-    m_camera.SetOrthographicProjectionMatrix(glm::vec3(-aspect, -1.0f, -3.0f), glm::vec3(aspect, 1.0f, 3.0f));
+    m_camera.SetPerspectiveProjectionMatrix(std::numbers::pi / 3, aspect, .1f, 10.0f);
     
     glm::vec2 mousePos = window.GetMousePosition(true);
-    m_camera.SetViewMatrix(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(mousePos.x, mousePos.y, 0.0f));
+    glm::vec3 cameraPos(0.0f, .5f, 2.0f);
+    m_camera.SetViewMatrix(cameraPos, glm::vec3(mousePos.x, mousePos.y, 0.0f));
 }
 
 void GearsApplication::Render()
