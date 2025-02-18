@@ -113,7 +113,10 @@ void GearsApplication::InitializeShaders()
     // Attach shaders and link
     if (!m_shaderProgram.Build(vertexShader, fragmentShader))
     {
+        std::array<char, 256> errors;
+        m_shaderProgram.GetLinkingErrors(errors);
         std::cout << "Error linking shaders" << std::endl;
+        std::cout << errors.data() << std::endl;
         return;
     }
 
