@@ -52,7 +52,7 @@ private:
     // (todo) 03.1: Add the world matrix uniform
     ShaderProgram::Location m_worldMatrixUniform;
     float m_rotationSpeed;
-    float m_largeRotationAngle, m_mediumRotationAngle;
+    float m_largeRotationAngle, m_mediumRotationAngle, m_smallRotationAngle;
 
     int m_largeCogCount, m_mediumCogCount, m_smallCogCount;
 

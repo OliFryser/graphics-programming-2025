@@ -18,6 +18,7 @@ GearsApplication::GearsApplication()
     , m_rotationSpeed(1.0f)
     , m_largeRotationAngle(0.0f)
     , m_mediumRotationAngle(0.0f)
+    , m_smallRotationAngle(1.0f)
     , m_largeCogCount(16)
     , m_mediumCogCount(8)
     , m_smallCogCount(30)
@@ -60,18 +61,22 @@ void GearsApplication::Render()
 
     glm::mat4 rotationMatrix = glm::rotate(m_largeRotationAngle, glm::vec3(.0f, .0f, 1.0f));
     glm::mat4 centerGearMatrix(1.0f);
-    DrawGear(m_largeGear, rotationMatrix * centerGearMatrix, Color(0.8f, 0.2f, .2f));
+    DrawGear(m_largeGear, centerGearMatrix * rotationMatrix, Color(0.8f, 0.2f, .2f));
 
-    // (todo) 03.2: Draw medium gear to the right
     // medium gear has half as many gears as the big gear. The medium gear should therefore have double the rotationspeed
     float largeToMediumRatio = static_cast<float>(m_largeCogCount / m_mediumCogCount);
     m_mediumRotationAngle -= m_rotationSpeed * largeToMediumRatio * GetDeltaTime();
-    glm::mat4 mediumRotationMatrix = glm::rotate(m_mediumRotationAngle, glm::vec3(.0f, .0f, 1.0f));
-    glm::mat4 rightGearMatrix = glm::translate(glm::vec3(.75f, .0f, .0f));
-    DrawGear(m_mediumGear, rightGearMatrix * mediumRotationMatrix, Color(.2f, .8f, .2f));
+    glm::mat4 rightRotationMatrix = glm::rotate(m_mediumRotationAngle, glm::vec3(.0f, .0f, 1.0f));
+    glm::mat4 rightTranslationMatrix = glm::translate(glm::vec3(.75f, .0f, .0f));
+    DrawGear(m_mediumGear, rightTranslationMatrix * rightRotationMatrix, Color(.2f, .8f, .2f));
 
     // (todo) 03.3: Draw small gear at the top-left corner
-
+    float largeToSmallRatio = static_cast<float>(m_largeCogCount) / static_cast<float>(m_smallCogCount);
+    m_smallRotationAngle -= m_rotationSpeed * largeToSmallRatio * GetDeltaTime();
+    glm::mat4 leftScaleMatrix = glm::scale(glm::vec3(7.5f));
+    glm::mat4 leftRotationMatrix = glm::rotate(m_smallRotationAngle, glm::vec3(.0f, .0f, 1.0f));
+    glm::mat4 leftTranslationMatrix = glm::translate(glm::vec3(-1.0f, 1.0f, 0.0f));
+    DrawGear(m_smallGear, leftTranslationMatrix * leftRotationMatrix * leftScaleMatrix, Color(.2f, .8f, .2f));
 
     // (todo) 03.4: Draw small gear linked to the center gear
 
