@@ -50,8 +50,19 @@ void GearsApplication::Update()
     m_camera.SetPerspectiveProjectionMatrix(std::numbers::pi / 3, aspect, .1f, 10.0f);
     
     glm::vec2 mousePos = window.GetMousePosition(true);
-    glm::vec3 cameraPos(0.0f, .5f, 2.0f);
+    glm::vec3 cameraPos = UpdateCameraPosition(window);
+    
     m_camera.SetViewMatrix(cameraPos, glm::vec3(mousePos.x, mousePos.y, 0.0f));
+}
+
+glm::vec3 GearsApplication::UpdateCameraPosition(const Window& window)
+{
+    bool forward = window.IsKeyPressed(GLFW_KEY_W);
+    bool back = window.IsKeyPressed(GLFW_KEY_S);
+    bool left = window.IsKeyPressed(GLFW_KEY_A);
+    bool right = window.IsKeyPressed(GLFW_KEY_D);
+
+    return glm::vec3(0.0f, .5f, 2.0f);
 }
 
 void GearsApplication::Render()
@@ -126,7 +137,9 @@ void GearsApplication::InitializeShaders()
 
     // (todo) 03.5: Find the ViewProjMatrix uniform location
     m_viewProjMatrixUniform = m_shaderProgram.GetUniformLocation("ViewProjMatrix");
+    glm::vec3 cameraPos(0.0f, .5f, 2.0f);
 
+    m_camera.SetViewMatrix(cameraPos, glm::vec3(0.0f, 0.0f, 0.0f));
 }
 
 // Draw a gear mesh with a specific world matrix and color

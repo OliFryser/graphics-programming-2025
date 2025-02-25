@@ -37,6 +37,8 @@ private:
     // Helper function to encapsulate loading and compiling a shader
     void LoadAndCompileShader(Shader& shader, const char* path);
 
+    glm::vec3 UpdateCameraPosition(const Window& window);
+
 private:
 
     // Gear meshes
