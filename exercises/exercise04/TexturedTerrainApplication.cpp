@@ -40,7 +40,7 @@ void TexturedTerrainApplication::Initialize()
     GetDevice().EnableFeature(GL_DEPTH_TEST);
 
     //Enable wireframe
-    GetDevice().SetWireframeEnabled(true);
+    //GetDevice().SetWireframeEnabled(true);
 }
 
 void TexturedTerrainApplication::Update()
@@ -91,7 +91,7 @@ void TexturedTerrainApplication::InitializeTextures()
     m_heightMaps.push_back(CreateHeightMap(m_gridX, m_gridY, glm::ivec2(-1, -1)));
 
     // (todo) 04.3: Load terrain textures here
-
+    m_grassTexture = LoadTexture("textures/grass.jpg");
 
     // (todo) 04.5: Load water texture here
 
@@ -115,14 +115,19 @@ void TexturedTerrainApplication::InitializeMaterials()
     std::shared_ptr<ShaderProgram> terrainShaderProgram = std::make_shared<ShaderProgram>();
     terrainShaderProgram->Build(terrainVS, terrainFS);
 
-    for (int i = 0; i < 4; i++)
+    m_terrainMaterials.push_back(std::make_shared<Material>(terrainShaderProgram));
+    m_terrainMaterials[0]->SetUniformValue("ColorTexture", m_grassTexture);
+    m_terrainMaterials[0]->SetUniformValue("ColorTextureScale", glm::vec2(0.05f));
+    m_terrainMaterials[0]->SetUniformValue("Color", glm::vec4(1.0f));
+
+    for (int i = 1; i < 4; i++)
     {
-        std::cout << i << std::endl;
-        m_terrainMaterials.push_back(std::make_shared<Material>(terrainShaderProgram));
-        m_terrainMaterials[i]->SetUniformValue("Color", glm::vec4(1.0f));
+        std::shared_ptr<Material> material = std::make_shared<Material>(*m_terrainMaterials[0].get());
+        m_terrainMaterials.push_back(material);
         m_terrainMaterials[i]->SetUniformValue("Heightmap", m_heightMaps[i]);
     }
 
+    m_terrainMaterials[0]->SetUniformValue("Heightmap", m_heightMaps[0]);
 
     /*m_terrainMaterials[0]->SetUniformValue("Color", glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
     m_terrainMaterials[1]->SetUniformValue("Color", glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
@@ -171,18 +176,14 @@ std::shared_ptr<Texture2DObject> TexturedTerrainApplication::LoadTexture(const c
     int height = 0;
     int components = 0;
     
-    
-    // (todo) 04.3: Load the texture data here
-    unsigned char* data = nullptr;
+    unsigned char* data = stbi_load(path, &width, &height, &components, 4);
 
     texture->Bind();
     texture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, std::span<const unsigned char>(data, width * height * 4));
 
-    // (todo) 04.3: Generate mipmaps
+    texture->GenerateMipmap();
 
-
-    // (todo) 04.3: Release texture data
-
+    stbi_image_free(data);
 
     return texture;
 }
@@ -199,7 +200,7 @@ std::shared_ptr<Texture2DObject> TexturedTerrainApplication::CreateHeightMap(uns
             float x = i / static_cast<float>(width - 1);
             float y = j / static_cast<float>(height - 1);
 
-            pixels.push_back(stb_perlin_fbm_noise3(x + coords.x, y + coords.y, 0.0f, 2.0f, .5f, 6));
+            pixels.push_back(stb_perlin_fbm_noise3(x + coords.x, y + coords.y, 0.0f, 2.0f, .5f, 6) * .5f);
         }
     }
 

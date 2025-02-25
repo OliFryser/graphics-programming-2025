@@ -49,5 +49,6 @@ private:
     std::vector<std::shared_ptr<Material>> m_terrainMaterials;
 
     std::shared_ptr<Texture2DObject> m_defaultTexture;
+    std::shared_ptr<Texture2DObject> m_grassTexture;
     std::vector<std::shared_ptr<Texture2DObject>> m_heightMaps;
 };
