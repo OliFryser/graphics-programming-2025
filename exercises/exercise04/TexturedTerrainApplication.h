@@ -35,6 +35,8 @@ private:
     void CreateTerrainMesh(Mesh& mesh, unsigned int gridX, unsigned int gridY);
 
 private:
+    const int TERRAIN_MESH_COUNT = 4;
+
     unsigned int m_gridX, m_gridY;
 
     Camera m_camera;
@@ -44,10 +46,8 @@ private:
 
     Mesh m_terrainPatch;
     std::shared_ptr<Material> m_defaultMaterial;
-    std::shared_ptr<Material> m_terrainMaterial;
-
+    std::vector<std::shared_ptr<Material>> m_terrainMaterials;
 
     std::shared_ptr<Texture2DObject> m_defaultTexture;
-    std::shared_ptr<Texture2DObject> m_heightMapTexture;
-
+    std::vector<std::shared_ptr<Texture2DObject>> m_heightMaps;
 };

@@ -15,7 +15,7 @@ uniform mat4 ViewProjMatrix;
 
 void main()
 {
-	vec4 height = texture(Heightmap, VertexPosition.xz);
+	vec4 height = texture(Heightmap, (VertexPosition.xz * 127 + 0.5)/128);
 	WorldPosition = (WorldMatrix * vec4(VertexPosition.x, height.x, VertexPosition.z, 1.0)).xyz;
 	WorldNormal = (WorldMatrix * vec4(VertexNormal, 0.0)).xyz;
 	TexCoord = VertexTexCoord;
