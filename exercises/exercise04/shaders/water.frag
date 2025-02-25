@@ -10,7 +10,10 @@ uniform vec4 Color;
 uniform vec2 ColorTextureScale;
 uniform sampler2D ColorTexture;
 
+uniform float Time;
+
 void main()
 {
-	FragColor = Color * texture(ColorTexture, TexCoord * ColorTextureScale);;
+	vec2 samplingSpot = TexCoord * ColorTextureScale + vec2(sin(Time * .5), 0);
+	FragColor = Color * texture(ColorTexture, samplingSpot);
 }

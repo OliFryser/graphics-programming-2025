@@ -56,6 +56,8 @@ void TexturedTerrainApplication::Update()
     window.GetDimensions(width, height);
     float aspectRatio = static_cast<float>(width) / height;
     m_camera.SetPerspectiveProjectionMatrix(1.0f, aspectRatio, 0.1f, 100.0f);
+
+    m_waterMaterial->SetUniformValue("Time", GetCurrentTime());
 }
 
 void TexturedTerrainApplication::Render()
