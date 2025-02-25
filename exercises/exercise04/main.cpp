@@ -5,3 +5,4 @@ int main()
     TexturedTerrainApplication texturedTerrainApplication;
     return texturedTerrainApplication.Run();
 }
+

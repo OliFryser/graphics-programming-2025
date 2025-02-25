@@ -65,10 +65,10 @@ void TexturedTerrainApplication::Render()
     // Clear color and depth
     GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
 
-    glm::mat4 q1Translate = glm::translate(glm::vec3(0, 0, -1.0f));
-    glm::mat4 q2Translate = glm::translate(glm::vec3(-1.0f, 0, -1.0f));
-    glm::mat4 q3Translate = glm::translate(glm::vec3(-1.0f, 0, 0));
-    glm::mat4 q4Translate = glm::translate(glm::vec3(0, 0, 0));
+    glm::mat4 q1Translate = glm::translate(glm::vec3(0, -.5f, -1.0f));
+    glm::mat4 q2Translate = glm::translate(glm::vec3(-1.0f, -.5f, -1.0f));
+    glm::mat4 q3Translate = glm::translate(glm::vec3(-1.0f, -.5f, 0));
+    glm::mat4 q4Translate = glm::translate(glm::vec3(0, -.5f, 0));
 
     // Terrain patches
     DrawObject(m_terrainPatch, *m_terrainMaterials[1], glm::scale(glm::vec3(10.0f)) * q1Translate);
@@ -91,7 +91,10 @@ void TexturedTerrainApplication::InitializeTextures()
     m_heightMaps.push_back(CreateHeightMap(m_gridX, m_gridY, glm::ivec2(-1, -1)));
 
     // (todo) 04.3: Load terrain textures here
+    m_dirtTexture = LoadTexture("textures/dirt.png");
     m_grassTexture = LoadTexture("textures/grass.jpg");
+    m_rockTexture = LoadTexture("textures/rock.jpg");
+    m_snowTexture = LoadTexture("textures/snow.jpg");
 
     // (todo) 04.5: Load water texture here
 
@@ -116,7 +119,13 @@ void TexturedTerrainApplication::InitializeMaterials()
     terrainShaderProgram->Build(terrainVS, terrainFS);
 
     m_terrainMaterials.push_back(std::make_shared<Material>(terrainShaderProgram));
-    m_terrainMaterials[0]->SetUniformValue("ColorTexture", m_grassTexture);
+    m_terrainMaterials[0]->SetUniformValue("DirtTexture", m_dirtTexture);
+    m_terrainMaterials[0]->SetUniformValue("GrassTexture", m_grassTexture);
+    m_terrainMaterials[0]->SetUniformValue("RockTexture", m_rockTexture);
+    m_terrainMaterials[0]->SetUniformValue("SnowTexture", m_snowTexture);
+    m_terrainMaterials[0]->SetUniformValue("GrassRange", glm::vec2(.3f, .5f));
+    m_terrainMaterials[0]->SetUniformValue("RockRange", glm::vec2(.5f, .7f));
+    m_terrainMaterials[0]->SetUniformValue("SnowRange", glm::vec2(.7f, .8f));
     m_terrainMaterials[0]->SetUniformValue("ColorTextureScale", glm::vec2(0.05f));
     m_terrainMaterials[0]->SetUniformValue("Color", glm::vec4(1.0f));
 
@@ -191,6 +200,8 @@ std::shared_ptr<Texture2DObject> TexturedTerrainApplication::LoadTexture(const c
 std::shared_ptr<Texture2DObject> TexturedTerrainApplication::CreateHeightMap(unsigned int width, unsigned int height, glm::ivec2 coords)
 {
     std::shared_ptr<Texture2DObject> heightmap = std::make_shared<Texture2DObject>();
+    float maxHeight = 0;
+    float minHeight = 10000.0f;
 
     std::vector<float> pixels;
     for (unsigned int j = 0; j < height; ++j)
@@ -199,10 +210,19 @@ std::shared_ptr<Texture2DObject> TexturedTerrainApplication::CreateHeightMap(uns
         {
             float x = i / static_cast<float>(width - 1);
             float y = j / static_cast<float>(height - 1);
+            
+            float height = (stb_perlin_fbm_noise3(x + coords.x, y + coords.y, 0.0f, 2.0f, .5f, 6) + 1.0f) * .5f;
+            
+            if (height > maxHeight)
+                maxHeight = height;
+            if (height < minHeight)
+                minHeight = height;
 
-            pixels.push_back(stb_perlin_fbm_noise3(x + coords.x, y + coords.y, 0.0f, 2.0f, .5f, 6) * .5f);
+            pixels.push_back(height);
         }
     }
+
+    std::cout << "Min Height: " << minHeight << ", Max Height: " << maxHeight << std::endl;
 
     heightmap->Bind();
     heightmap->SetImage<float>(0, width, height, TextureObject::FormatR, TextureObject::InternalFormatR16F, pixels);
