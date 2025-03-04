@@ -8,6 +8,13 @@ in float Height;
 out vec4 FragColor;
 
 uniform vec4 Color;
+uniform sampler2D ColorTexture0;
+uniform sampler2D ColorTexture1;
+uniform sampler2D ColorTexture2;
+uniform sampler2D ColorTexture3;
+uniform vec2 ColorTextureRange01;
+uniform vec2 ColorTextureRange12;
+uniform vec2 ColorTextureRange23;
 uniform vec2 ColorTextureScale;
 
 uniform sampler2D DirtTexture;
@@ -40,7 +47,9 @@ void main()
 	vec4 mix3 = mix(mix2, SnowSample, mixed3);
 
 	FragColor = Color * mix3;
-	
+
+	// Multiply texture color by vertex Color
+	FragColor = Color * color;
 }
 
 

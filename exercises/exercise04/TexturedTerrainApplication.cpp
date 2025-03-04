@@ -196,13 +196,16 @@ std::shared_ptr<Texture2DObject> TexturedTerrainApplication::LoadTexture(const c
     int components = 0;
     
     unsigned char* data = stbi_load(path, &width, &height, &components, 4);
+    unsigned char* data = nullptr;
 
     texture->Bind();
     texture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, std::span<const unsigned char>(data, width * height * 4));
-
     texture->GenerateMipmap();
 
     stbi_image_free(data);
+
+    // (todo) 04.3: Release texture data
+
 
     return texture;
 }
@@ -213,11 +216,8 @@ std::shared_ptr<Texture2DObject> TexturedTerrainApplication::CreateHeightMap(uns
     float maxHeight = 0;
     float minHeight = 10000.0f;
 
-    std::vector<float> pixels;
+    std::vector<float> pixels(height * width);
     for (unsigned int j = 0; j < height; ++j)
-    {
-        for (unsigned int i = 0; i < width; ++i)
-        {
             float x = i / static_cast<float>(width - 1);
             float y = j / static_cast<float>(height - 1);
             
@@ -229,6 +229,9 @@ std::shared_ptr<Texture2DObject> TexturedTerrainApplication::CreateHeightMap(uns
                 minHeight = height;
 
             pixels.push_back(height);
+        for (unsigned int i = 0; i < width; ++i)
+        {
+            // (todo) 04.1: Add pixel data
         }
     }
 

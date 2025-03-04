@@ -1,3 +1,4 @@
-.vs
+﻿.vs
 out
 build
+*.ini
