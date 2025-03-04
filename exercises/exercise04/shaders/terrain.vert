@@ -13,7 +13,6 @@ uniform sampler2D Heightmap;
 
 uniform mat4 WorldMatrix;
 uniform mat4 ViewProjMatrix;
-uniform sampler2D Heightmap;
 
 void main()
 {

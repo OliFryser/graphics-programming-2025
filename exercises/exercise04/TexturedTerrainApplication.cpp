@@ -79,7 +79,7 @@ void TexturedTerrainApplication::Render()
     DrawObject(m_terrainPatch, *m_terrainMaterials[3], glm::scale(glm::vec3(10.0f)) * q2Translate * pushDownTranslate);
     DrawObject(m_terrainPatch, *m_terrainMaterials[2], glm::scale(glm::vec3(10.0f)) * q3Translate * pushDownTranslate);
     DrawObject(m_terrainPatch, *m_terrainMaterials[0], glm::scale(glm::vec3(10.0f)) * q4Translate * pushDownTranslate);
-    
+
     glm::mat4 waterLevel = glm::translate(glm::vec3(0.0f, -0.15f, 0.0f));
 
     // Water patches
@@ -194,18 +194,15 @@ std::shared_ptr<Texture2DObject> TexturedTerrainApplication::LoadTexture(const c
     int width = 0;
     int height = 0;
     int components = 0;
-    
+
     unsigned char* data = stbi_load(path, &width, &height, &components, 4);
-    unsigned char* data = nullptr;
 
     texture->Bind();
     texture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, std::span<const unsigned char>(data, width * height * 4));
+
     texture->GenerateMipmap();
 
     stbi_image_free(data);
-
-    // (todo) 04.3: Release texture data
-
 
     return texture;
 }
@@ -216,22 +213,22 @@ std::shared_ptr<Texture2DObject> TexturedTerrainApplication::CreateHeightMap(uns
     float maxHeight = 0;
     float minHeight = 10000.0f;
 
-    std::vector<float> pixels(height * width);
+    std::vector<float> pixels;
     for (unsigned int j = 0; j < height; ++j)
+    {
+        for (unsigned int i = 0; i < width; ++i)
+        {
             float x = i / static_cast<float>(width - 1);
             float y = j / static_cast<float>(height - 1);
-            
+
             float height = (stb_perlin_fbm_noise3(x + coords.x, y + coords.y, 0.0f, 2.0f, .5f, 6) + 1.0f) * .5f;
-            
+
             if (height > maxHeight)
                 maxHeight = height;
             if (height < minHeight)
                 minHeight = height;
 
             pixels.push_back(height);
-        for (unsigned int i = 0; i < width; ++i)
-        {
-            // (todo) 04.1: Add pixel data
         }
     }
 
@@ -264,7 +261,8 @@ void TexturedTerrainApplication::CreateTerrainMesh(Mesh& mesh, unsigned int grid
     {
         Vertex() = default;
         Vertex(const glm::vec3& position, const glm::vec3& normal, const glm::vec2 texCoord)
-            : position(position), normal(normal), texCoord(texCoord) {}
+            : position(position), normal(normal), texCoord(texCoord) {
+        }
         glm::vec3 position;
         glm::vec3 normal;
         glm::vec2 texCoord;
