@@ -46,8 +46,29 @@ private:
     // Loaded model
     Model m_model;
 
+    int m_millIndex;
+    int m_groundIndex;
+    int m_shadowIndex;
+
     // (todo) 05.X: Add light variables
+    glm::vec3 m_ambientColor;
+    glm::vec3 m_lightColor;
+    float m_lightIntensity;
+    glm::vec3 m_lightPosition;
 
+    float m_millAmbientReflection;
+    float m_groundAmbientReflection;
+    float m_shadowAmbientReflection;
 
+    float m_millDiffuseReflection;
+    float m_groundDiffuseReflection;
+    float m_shadowDiffuseReflection;
 
+    float m_millSpecularReflection;
+    float m_groundSpecularReflection;
+    float m_shadowSpecularReflection;
+
+    float m_millSpecularExponent;
+    float m_groundSpecularExponent;
+    float m_shadowSpecularExponent;
 };
