@@ -182,7 +182,7 @@ Shader "CG2024/CelShading"
 
             void main()
             {
-                float outlineSize = 0.01f;
+                float outlineSize = 0.02f;
                 vec3 worldPos = (unity_ObjectToWorld * gl_Vertex).xyz;
                 vec3 normal = (unity_ObjectToWorld * vec4(gl_Normal, 0.0f)).xyz;
                 worldPos += normal * outlineSize;
