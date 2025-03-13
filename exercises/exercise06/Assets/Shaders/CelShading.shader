@@ -7,6 +7,7 @@ Shader "CG2024/CelShading"
         _Reflectance("Reflectance (Ambient, Diffuse, Specular)", Vector) = (1, 1, 1, 0)
         _SpecularExponent("Specular Exponent", Float) = 100.0
         _Levels("Levels", Int) = 3
+        _Thickness("Thickness", float) = 0.02
     }
 
     SubShader
@@ -24,6 +25,7 @@ Shader "CG2024/CelShading"
         uniform vec4 _Reflectance;
         uniform float _SpecularExponent;
         uniform int _Levels;
+        uniform float _Thickness;
         ENDGLSL
 
         Pass
@@ -182,7 +184,7 @@ Shader "CG2024/CelShading"
 
             void main()
             {
-                float outlineSize = 0.02f;
+                float outlineSize = _Thickness;
                 vec3 worldPos = (unity_ObjectToWorld * gl_Vertex).xyz;
                 vec3 normal = (unity_ObjectToWorld * vec4(gl_Normal, 0.0f)).xyz;
                 worldPos += normal * outlineSize;

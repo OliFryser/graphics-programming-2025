@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Bark
-  m_Shader: {fileID: 4800000, guid: c82ab8e5723db83469171ae9db01b305, type: 3}
+  m_Name: TeapotHatching
+  m_Shader: {fileID: 4800000, guid: 13dd0789e3f44ae4e9ecd1811640ae9c, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -47,33 +47,37 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _Hatch0Texture:
+    - _EnvironmentTexture:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _Hatch1Texture:
+    - _HatchArray:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _Hatch2Texture:
-        m_Texture: {fileID: 0}
+    - _Hatching0:
+        m_Texture: {fileID: 2800000, guid: 4f2c1630d159d5041abed235d2b9408a, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _Hatch3Texture:
-        m_Texture: {fileID: 0}
+    - _Hatching1:
+        m_Texture: {fileID: 2800000, guid: fb4aa34aaafcd5b4da5a2cc373490249, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _Hatch4Texture:
-        m_Texture: {fileID: 0}
+    - _Hatching2:
+        m_Texture: {fileID: 2800000, guid: a9a1c7d8faa4a3b4998ca11708ca593d, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _Hatch5Texture:
-        m_Texture: {fileID: 0}
+    - _Hatching3:
+        m_Texture: {fileID: 2800000, guid: 78d5c4c3f74311c4aa6cee57bde5f6f4, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _HatchTexture:
-        m_Texture: {fileID: 18700000, guid: 84fcdeed4467a344d99dede112bc0bd7, type: 3}
-        m_Scale: {x: 2, y: 2}
+    - _Hatching4:
+        m_Texture: {fileID: 2800000, guid: 8c6fba2c1fe6adc4985bfec38c4bbaec, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Hatching5:
+        m_Texture: {fileID: 2800000, guid: 89e07135195a26c4e9921c262c421167, type: 3}
+        m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 0}
@@ -100,21 +104,21 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _Levels: 3
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
+    - _Smoothness: 1
     - _SmoothnessTextureChannel: 0
-    - _SpecularExponent: 15
+    - _SpecularExponent: 100
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _Thickness: 0.02
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
-    - _Albedo: {r: 0.6698113, g: 0.33593017, b: 0.21168563, a: 1}
+    - _Albedo: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _Reflectance: {r: 1, g: 1, b: 0.5, a: 0}
+    - _Reflectance: {r: 1, g: 1, b: 1, a: 0}
   m_BuildTextureStacks: []
