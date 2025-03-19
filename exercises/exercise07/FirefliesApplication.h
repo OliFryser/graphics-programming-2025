@@ -83,6 +83,7 @@ private:
     glm::vec3 m_lightColor;
     float m_lightIntensity;
     bool m_useRandomColor;
+    float m_distanceAttenuation[2];
 
     // Renderer
     Renderer m_renderer;
