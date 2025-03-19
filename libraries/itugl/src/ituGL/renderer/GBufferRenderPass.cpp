@@ -25,7 +25,7 @@ void GBufferRenderPass::InitFramebuffer()
     m_framebuffer.SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Color1, *m_normalTexture);
 
     // (todo) 07.5: Set the others texture as color attachment 2
-
+    m_framebuffer.SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Color2, *m_othersTexture);
 
     // (todo) 07.2: Set the draw buffers used by the framebuffer (all attachments except depth)
     m_framebuffer.SetDrawBuffers(std::array<FramebufferObject::Attachment, 3>(
@@ -63,7 +63,10 @@ void GBufferRenderPass::InitTextures(int width, int height)
 
     // (todo) 07.5: Others: Bind the newly created texture, set the image and the min and magfilter as nearest
     m_othersTexture = std::make_shared<Texture2DObject>();
-
+    m_othersTexture->Bind();
+    m_othersTexture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA8);
+    m_othersTexture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_NEAREST);
+    m_othersTexture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_NEAREST);
 
     Texture2DObject::Unbind();
 }
