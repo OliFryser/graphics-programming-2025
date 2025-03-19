@@ -12,7 +12,7 @@
 
 FirefliesApplication::FirefliesApplication()
     : Application(1024, 1024, "Fireflies demo")
-    , m_renderMode(RenderMode::Forward)
+    , m_renderMode(RenderMode::Deferred)
     , m_renderer(GetDevice())
     , m_mouseClicked(false)
     , m_ambientColor(0.0f)
@@ -333,6 +333,8 @@ void FirefliesApplication::InitializeRenderer()
 void FirefliesApplication::RenderGUI()
 {
     m_imGui.BeginFrame();
+
+    ImGui::Text("FPS: %.2f", 1.0f / GetDeltaTime());
 
     // Add debug controls for light properties
     ImGui::ColorEdit3("Ambient color", &m_ambientColor[0]);
