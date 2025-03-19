@@ -37,6 +37,12 @@ vec3 GetImplicitNormal(vec2 normal)
 vec3 ReconstructViewPosition(sampler2D depthTexture, vec2 texCoord, mat4 invProjMatrix)
 {
 	// (todo) 07.4: Reconstruct the position, using the screen texture coordinates and the depth
-	return vec3(0);
+	float depthValue = texture(depthTexture, texCoord).r;
+	depthValue = depthValue * 2 - 1;
+	float xClip = texCoord.x * 2 - 1;
+	float yClip = texCoord.y * 2 - 1;
+	vec3 clipPosition = vec3(xClip, yClip, depthValue);
+	vec4 viewSpacePosition = invProjMatrix * vec4(clipPosition, 1.0);
+	return (viewSpacePosition / viewSpacePosition.w).xyz;
 }
 
