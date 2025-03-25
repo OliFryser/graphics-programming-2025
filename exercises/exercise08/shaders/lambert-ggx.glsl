@@ -84,21 +84,21 @@ vec3 SampleEnvironment(vec3 direction, float lodLevel)
 vec3 ComputeDiffuseIndirectLighting(SurfaceData data)
 {
 	// (todo) 08.1: Sample the environment map at its max LOD level and multiply with the albedo
-	return GetAlbedo(data) * SampleEnvironment(data.normal, 1);
+	return GetAlbedo(data) * SampleEnvironment(data.normal, 1.0);
 }
 
 vec3 ComputeSpecularIndirectLighting(SurfaceData data, vec3 viewDir)
 {
 	// (todo) 08.2: Compute the reflection vector with the viewDir and the normal
-
+	vec3 reflectionVector = reflect(-viewDir, data.normal);
 
 	// (todo) 08.2: Sample the environment map using the reflection vector, at a specific LOD level
-
+	vec3 reflectedEnvironment = SampleEnvironment(reflectionVector , pow(data.roughness, 0.25));
 
 	// (todo) 08.6: Add a geometry term to the indirect specular
 
 
-	return vec3(0.0f);
+	return reflectedEnvironment;
 }
 
 vec3 CombineIndirectLighting(vec3 diffuse, vec3 specular, SurfaceData data, vec3 viewDir)
