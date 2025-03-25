@@ -39,7 +39,7 @@ void ForwardRenderPass::Render()
             // Set the renderstates
             renderer.SetLightingRenderStates(first);
 
-            // 07.0: Draw
+            // Draw
             drawcallInfo.drawcall.Draw();
 
             first = false;
