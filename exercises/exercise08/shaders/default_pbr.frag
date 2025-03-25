@@ -23,8 +23,8 @@ void main()
 	data.albedo = Color * texture(ColorTexture, TexCoord).rgb;
 	vec3 arm = texture(SpecularTexture, TexCoord).rgb;
 	data.ambientOcclusion = arm.x;
-	data.roughness        = arm.y;
-	data.metalness        = arm.z;
+	data.roughness = arm.y;
+	data.metalness = arm.z;
 
 	vec3 position = WorldPosition;
 	vec3 viewDir = GetDirection(position, CameraPosition);
