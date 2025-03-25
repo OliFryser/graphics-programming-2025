@@ -44,7 +44,6 @@ void GearsApplication::Update()
     const Window& window = GetMainWindow();
     int width, height;
     window.GetDimensions(width, height);
-    // (todo) 03.5: Update the camera matrices
     float aspect = static_cast<float>(width) / static_cast<float>(height);
     
     m_camera.SetPerspectiveProjectionMatrix(std::numbers::pi / 3, aspect, .1f, 10.0f);

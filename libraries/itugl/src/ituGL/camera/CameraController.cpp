@@ -17,6 +17,12 @@ CameraController::CameraController()
 
 void CameraController::Update(const Window& window, float deltaTime)
 {
+    // Adjust for aspect ratio
+    int width, height;
+    window.GetDimensions(width, height);
+    float aspect = static_cast<float>(width) / static_cast<float>(height);
+    m_camera->GetCamera()->SetPerspectiveProjectionMatrix(1.0f, aspect, .1f, 100.0f);
+
     if (!m_camera || !m_camera->GetCamera() || !m_camera->GetTransform())
         return;
 
