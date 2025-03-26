@@ -24,7 +24,8 @@ protected:
 private:
     void InitializeCamera();
     void InitializeLights();
-    void InitializeMaterial();
+    void InitializeMaterials();
+    std::shared_ptr<Material> InitializeMaterial(Shader& vertexShader, Shader& fragmentShader);
     void InitializeModels();
     void InitializeRenderer();
 

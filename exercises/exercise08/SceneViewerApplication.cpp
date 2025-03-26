@@ -14,6 +14,7 @@
 #include <ituGL/shader/ShaderUniformCollection.h>
 #include <ituGL/shader/Material.h>
 #include <ituGL/geometry/Model.h>
+#include <ituGL/scene/Transform.h>
 #include <ituGL/scene/SceneModel.h>
 
 #include <ituGL/renderer/SkyboxRenderPass.h>
@@ -38,7 +39,7 @@ void SceneViewerApplication::Initialize()
 
     InitializeCamera();
     InitializeLights();
-    InitializeMaterial();
+    InitializeMaterials();
     InitializeModels();
     InitializeRenderer();
 }
@@ -102,28 +103,52 @@ void SceneViewerApplication::InitializeLights()
     m_scene.AddSceneNode(std::make_shared<SceneLight>("directional light", directionalLight));
 
     // Create a point light and add it to the scene
-    std::shared_ptr<PointLight> pointLight = std::make_shared<PointLight>();
-    pointLight->SetPosition(glm::vec3(0, 0, 0));
-    pointLight->SetDistanceAttenuation(glm::vec2(5.0f, 10.0f));
-    m_scene.AddSceneNode(std::make_shared<SceneLight>("point light", pointLight));
+    //std::shared_ptr<PointLight> pointLight = std::make_shared<PointLight>();
+    //pointLight->SetPosition(glm::vec3(0, 0, 0));
+    //pointLight->SetDistanceAttenuation(glm::vec2(5.0f, 10.0f));
+    //m_scene.AddSceneNode(std::make_shared<SceneLight>("point light", pointLight));
 }
 
-void SceneViewerApplication::InitializeMaterial()
+void SceneViewerApplication::InitializeMaterials()
 {
-    // Load and build shader
-    std::vector<const char*> vertexShaderPaths;
-    vertexShaderPaths.push_back("shaders/version330.glsl");
-    vertexShaderPaths.push_back("shaders/default.vert");
-    Shader vertexShader = ShaderLoader(Shader::VertexShader).Load(vertexShaderPaths);
+    {
+        // Load and build shader
+        std::vector<const char*> vertexShaderPaths;
+        vertexShaderPaths.push_back("shaders/version330.glsl");
+        vertexShaderPaths.push_back("shaders/default.vert");
+        Shader vertexShader = ShaderLoader(Shader::VertexShader).Load(vertexShaderPaths);
 
-    std::vector<const char*> fragmentShaderPaths;
-    fragmentShaderPaths.push_back("shaders/version330.glsl");
-    fragmentShaderPaths.push_back("shaders/utils.glsl");
-    fragmentShaderPaths.push_back("shaders/lambert-ggx.glsl");
-    fragmentShaderPaths.push_back("shaders/lighting.glsl");
-    fragmentShaderPaths.push_back("shaders/default_pbr.frag");
-    Shader fragmentShader = ShaderLoader(Shader::FragmentShader).Load(fragmentShaderPaths);
+        std::vector<const char*> fragmentShaderPaths;
+        fragmentShaderPaths.push_back("shaders/version330.glsl");
+        fragmentShaderPaths.push_back("shaders/utils.glsl");
+        fragmentShaderPaths.push_back("shaders/lambert-ggx.glsl");
+        fragmentShaderPaths.push_back("shaders/lighting.glsl");
+        fragmentShaderPaths.push_back("shaders/default_pbr.frag");
+        Shader fragmentShader = ShaderLoader(Shader::FragmentShader).Load(fragmentShaderPaths);
 
+        m_defaultMaterial = InitializeMaterial(vertexShader, fragmentShader);
+    }
+    {
+        // Load and build shader
+        std::vector<const char*> vertexShaderPaths;
+        vertexShaderPaths.push_back("shaders/version330.glsl");
+        vertexShaderPaths.push_back("shaders/default.vert");
+        Shader vertexShader = ShaderLoader(Shader::VertexShader).Load(vertexShaderPaths);
+
+        std::vector<const char*> fragmentShaderPaths;
+        fragmentShaderPaths.push_back("shaders/version330.glsl");
+        fragmentShaderPaths.push_back("shaders/utils.glsl");
+        fragmentShaderPaths.push_back("shaders/blinn-phong.glsl");
+        fragmentShaderPaths.push_back("shaders/lighting.glsl");
+        fragmentShaderPaths.push_back("shaders/default.frag");
+        Shader fragmentShader = ShaderLoader(Shader::FragmentShader).Load(fragmentShaderPaths);
+
+        m_blinnPhongMaterial = InitializeMaterial(vertexShader, fragmentShader);
+    }
+}
+
+std::shared_ptr<Material> SceneViewerApplication::InitializeMaterial(Shader& vertexShader, Shader& fragmentShader)
+{
     std::shared_ptr<ShaderProgram> shaderProgramPtr = std::make_shared<ShaderProgram>();
     shaderProgramPtr->Build(vertexShader, fragmentShader);
 
@@ -159,12 +184,12 @@ void SceneViewerApplication::InitializeMaterial()
 
     // Create reference material
     assert(shaderProgramPtr);
-    m_defaultMaterial = std::make_shared<Material>(shaderProgramPtr, filteredUniforms);
+    return std::make_shared<Material>(shaderProgramPtr, filteredUniforms);
 }
 
 void SceneViewerApplication::InitializeModels()
 {
-    m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("models/skybox/defaultCubemap.png", TextureObject::FormatRGB, TextureObject::InternalFormatSRGB8);
+    m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("models/skybox/restaurantCubemap.png", TextureObject::FormatRGB, TextureObject::InternalFormatSRGB8);
 
     m_skyboxTexture->Bind();
     float maxLod;
@@ -179,12 +204,15 @@ void SceneViewerApplication::InitializeModels()
 
     // Configure loader
     ModelLoader loader(m_defaultMaterial);
+    ModelLoader blinnPhongLoader(m_blinnPhongMaterial);
 
     // Create a new material copy for each submaterial
     loader.SetCreateMaterials(true);
+    blinnPhongLoader.SetCreateMaterials(true);
 
     // Flip vertically textures loaded by the model loader
     loader.GetTexture2DLoader().SetFlipVertical(true);
+    blinnPhongLoader.GetTexture2DLoader().SetFlipVertical(true);
 
     // Link vertex properties to attributes
     loader.SetMaterialAttribute(VertexAttribute::Semantic::Position, "VertexPosition");
@@ -199,18 +227,41 @@ void SceneViewerApplication::InitializeModels()
     loader.SetMaterialProperty(ModelLoader::MaterialProperty::NormalTexture, "NormalTexture");
     loader.SetMaterialProperty(ModelLoader::MaterialProperty::SpecularTexture, "SpecularTexture");
 
+    // Link vertex properties to attributes
+    blinnPhongLoader.SetMaterialAttribute(VertexAttribute::Semantic::Position, "VertexPosition");
+    blinnPhongLoader.SetMaterialAttribute(VertexAttribute::Semantic::Normal, "VertexNormal");
+    blinnPhongLoader.SetMaterialAttribute(VertexAttribute::Semantic::Tangent, "VertexTangent");
+    blinnPhongLoader.SetMaterialAttribute(VertexAttribute::Semantic::Bitangent, "VertexBitangent");
+    blinnPhongLoader.SetMaterialAttribute(VertexAttribute::Semantic::TexCoord0, "VertexTexCoord");
+
+    // Link material properties to uniforms
+    blinnPhongLoader.SetMaterialProperty(ModelLoader::MaterialProperty::DiffuseColor, "Color");
+    blinnPhongLoader.SetMaterialProperty(ModelLoader::MaterialProperty::DiffuseTexture, "ColorTexture");
+    blinnPhongLoader.SetMaterialProperty(ModelLoader::MaterialProperty::NormalTexture, "NormalTexture");
+    blinnPhongLoader.SetMaterialProperty(ModelLoader::MaterialProperty::SpecularTexture, "SpecularTexture");
+
     // Load models
     std::shared_ptr<Model> chestModel = loader.LoadShared("models/treasure_chest/treasure_chest.obj");
     m_scene.AddSceneNode(std::make_shared<SceneModel>("treasure chest", chestModel));
 
+    std::shared_ptr<Transform> offsetTransform = std::make_shared<Transform>();
+
+    //offsetTransform->SetTranslation(glm::vec3(1.5f, 0.0f, 1.5f));
     //std::shared_ptr<Model> cameraModel = loader.LoadShared("models/camera/camera.obj");
-    //m_scene.AddSceneNode(std::make_shared<SceneModel>("camera model", cameraModel));
+    //m_scene.AddSceneNode(std::make_shared<SceneModel>("camera model", cameraModel, std::make_shared<Transform>(*offsetTransform)));
 
+    //offsetTransform->SetTranslation(glm::vec3(1.5f * 2, 0.0f, 1.5f * 2));
     //std::shared_ptr<Model> teaSetModel = loader.LoadShared("models/tea_set/tea_set.obj");
-    //m_scene.AddSceneNode(std::make_shared<SceneModel>("tea set", teaSetModel));
+    //m_scene.AddSceneNode(std::make_shared<SceneModel>("tea set", teaSetModel, std::make_shared<Transform>(*offsetTransform)));
 
+    //offsetTransform->SetTranslation(glm::vec3(1.5f * 3, 0.0f, 1.5f * 3));
     //std::shared_ptr<Model> clockModel = loader.LoadShared("models/alarm_clock/alarm_clock.obj");
-    //m_scene.AddSceneNode(std::make_shared<SceneModel>("alarm clock", clockModel));
+    //m_scene.AddSceneNode(std::make_shared<SceneModel>("alarm clock", clockModel, std::make_shared<Transform>(*offsetTransform)));
+
+    // load blinn-phong model
+    offsetTransform->SetTranslation(glm::vec3(1.5f, 0.0f, 0.0f));
+    std::shared_ptr<Model> chestModelBlinnPhong = blinnPhongLoader.LoadShared("models/treasure_chest/treasure_chest.obj");
+    m_scene.AddSceneNode(std::make_shared<SceneModel>("treasure chest blinn phong", chestModelBlinnPhong, std::make_shared<Transform>(*offsetTransform)));
 }
 
 void SceneViewerApplication::InitializeRenderer()
