@@ -31,7 +31,7 @@ PostFXSceneViewerApplication::PostFXSceneViewerApplication()
     , m_sceneFramebuffer(std::make_shared<FramebufferObject>())
     , m_exposure(1.0f)
     // (todo) 09.X: Set default value of configuration properties
-
+    
 {
 }
 
@@ -258,7 +258,7 @@ void PostFXSceneViewerApplication::InitializeFramebuffers()
     // Scene Texture
     m_sceneTexture = std::make_shared<Texture2DObject>();
     m_sceneTexture->Bind();
-    m_sceneTexture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormat::InternalFormatSRGBA8);
+    m_sceneTexture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormat::InternalFormatRGBA16F);
     m_sceneTexture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_LINEAR);
     m_sceneTexture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_LINEAR);
     Texture2DObject::Unbind();
@@ -314,11 +314,9 @@ void PostFXSceneViewerApplication::InitializeRenderer()
 
     // Final pass
     // (todo) 09.1: Replace with a new m_composeMaterial, using a new shader
-    std::shared_ptr<Material> copyMaterial = CreatePostFXMaterial("shaders/postfx/copy.frag", m_sceneTexture);
-    m_renderer.AddRenderPass(std::make_unique<PostFXRenderPass>(copyMaterial, m_renderer.GetDefaultFramebuffer()));
-
-    // (todo) 09.1: Set exposure uniform default value
-
+    m_composeMaterial = CreatePostFXMaterial("shaders/postfx/compose.frag", m_sceneTexture);
+    m_composeMaterial->SetUniformValue("Exposure", m_exposure);
+    m_renderer.AddRenderPass(std::make_unique<PostFXRenderPass>(m_composeMaterial, m_renderer.GetDefaultFramebuffer()));
 
     // (todo) 09.2: Set uniform default values
 
