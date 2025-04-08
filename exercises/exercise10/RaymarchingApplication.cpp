@@ -86,6 +86,12 @@ void RaymarchingApplication::InitializeMaterial()
     m_material = CreateRaymarchingMaterial("shaders/exercise10.glsl");
 
     // (todo) 10.X: Initialize material uniforms
+    m_material->SetUniformValue("SphereColor", glm::vec3(0.0f, 0.0f, 1.0f));
+    m_material->SetUniformValue("SphereCenter", glm::vec3(-2.0f, 0.0f, -10.0f));
+    m_material->SetUniformValue("SphereRadius", 1.25f);
+    m_material->SetUniformValue("BoxColor", glm::vec3(1.0f, 0.0f, .0f));
+    m_material->SetUniformValue("BoxMatrix", glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 2, 0, -10, 1));
+    m_material->SetUniformValue("BoxSize", glm::vec3(1.0f, 1.0f, 1.0f));
 }
 
 void RaymarchingApplication::InitializeRenderer()
@@ -132,8 +138,9 @@ void RaymarchingApplication::RenderGUI()
 
         if (ImGui::TreeNodeEx("Sphere", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            // (todo) 10.1: Add controls for sphere parameters
-
+            ImGui::ColorEdit3("Sphere Color", m_material->GetDataUniformPointer<float>("SphereColor"));
+            ImGui::DragFloat3("Sphere Center", m_material->GetDataUniformPointer<float>("SphereCenter"), .1f);
+            ImGui::DragFloat("Sphere Radius", m_material->GetDataUniformPointer<float>("SphereRadius"), .1f);
             ImGui::TreePop();
         }
         if (ImGui::TreeNodeEx("Box", ImGuiTreeNodeFlags_DefaultOpen))
@@ -142,6 +149,18 @@ void RaymarchingApplication::RenderGUI()
             static glm::vec3 rotation(0.0f);
 
             // (todo) 10.1: Add controls for box parameters
+            ImGui::ColorEdit3("Box Color", m_material->GetDataUniformPointer<float>("BoxColor"));
+            ImGui::DragFloat3("Box Translation", &translation.x, .1f);
+            ImGui::DragFloat3("Box rotation", &rotation.x, .1f);
+
+            auto boxTransform = glm::translate(translation);
+            boxTransform = glm::rotate(boxTransform, rotation.x, glm::vec3(1.0f, .0f, .0f));
+            boxTransform = glm::rotate(boxTransform, rotation.y, glm::vec3(.0f, 1.0f, .0f));
+            boxTransform = glm::rotate(boxTransform, rotation.z, glm::vec3(.0f, .0f, 1.0f));
+
+            m_material->SetUniformValue("BoxMatrix", boxTransform);
+
+            ImGui::DragFloat("Box Size", m_material->GetDataUniformPointer<float>("BoxSize"), .1f);
 
             ImGui::TreePop();
         }
