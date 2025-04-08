@@ -92,6 +92,7 @@ void RaymarchingApplication::InitializeMaterial()
     m_material->SetUniformValue("BoxColor", glm::vec3(1.0f, 0.0f, .0f));
     m_material->SetUniformValue("BoxMatrix", glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 2, 0, -10, 1));
     m_material->SetUniformValue("BoxSize", glm::vec3(1.0f, 1.0f, 1.0f));
+    m_material->SetUniformValue("Smoothness", .5f);
 }
 
 void RaymarchingApplication::InitializeRenderer()
@@ -161,7 +162,11 @@ void RaymarchingApplication::RenderGUI()
             m_material->SetUniformValue("BoxMatrix", boxTransform);
 
             ImGui::DragFloat("Box Size", m_material->GetDataUniformPointer<float>("BoxSize"), .1f);
-
+            ImGui::TreePop();
+        }
+        if (ImGui::TreeNodeEx("Ray Marching", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            ImGui::DragFloat("Smoothness", m_material->GetDataUniformPointer<float>("Smoothness"), .01f);
             ImGui::TreePop();
         }
     }
