@@ -1,4 +1,5 @@
 #include <ituGL/application/Window.h>
+#include <iostream>
 
 // Create the internal GLFW window. We provide some hints about it to OpenGL
 Window::Window(int width, int height, const char* title) : m_window(nullptr)
@@ -33,6 +34,8 @@ float Window::GetAspectRatio() const
 {
     int width, height;
     GetDimensions(width, height);
+    if (height <= 0 || width <= 0)
+        return 1.0f;
     return static_cast<float>(width) / height;
 }
 
