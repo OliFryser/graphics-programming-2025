@@ -136,11 +136,17 @@ void RaymarchingApplication::RenderGUI()
     if (auto window = m_imGui.UseWindow("Scene parameters"))
     {
         // (todo) 10.3: Get the camera view matrix and transform the sphere center and the box matrix
+        auto viewTransform = m_cameraController.GetCamera()->GetCamera()->GetViewMatrix();
 
         if (ImGui::TreeNodeEx("Sphere", ImGuiTreeNodeFlags_DefaultOpen))
         {
+            static glm::vec3 sphereCenter(glm::vec3(-2.0f, 0.0f, -10.0f));
+            
             ImGui::ColorEdit3("Sphere Color", m_material->GetDataUniformPointer<float>("SphereColor"));
-            ImGui::DragFloat3("Sphere Center", m_material->GetDataUniformPointer<float>("SphereCenter"), .1f);
+            ImGui::DragFloat3("Sphere Center", &sphereCenter.x, .1f);
+            auto transformedPosition = (viewTransform * glm::vec4(sphereCenter, 1.0));
+            m_material->SetUniformValue("SphereCenter", glm::vec3(transformedPosition.x, transformedPosition.y, transformedPosition.z));
+            
             ImGui::DragFloat("Sphere Radius", m_material->GetDataUniformPointer<float>("SphereRadius"), .1f);
             ImGui::TreePop();
         }
@@ -149,7 +155,6 @@ void RaymarchingApplication::RenderGUI()
             static glm::vec3 translation(2, 0, -10);
             static glm::vec3 rotation(0.0f);
 
-            // (todo) 10.1: Add controls for box parameters
             ImGui::ColorEdit3("Box Color", m_material->GetDataUniformPointer<float>("BoxColor"));
             ImGui::DragFloat3("Box Translation", &translation.x, .1f);
             ImGui::DragFloat3("Box rotation", &rotation.x, .1f);
@@ -159,7 +164,7 @@ void RaymarchingApplication::RenderGUI()
             boxTransform = glm::rotate(boxTransform, rotation.y, glm::vec3(.0f, 1.0f, .0f));
             boxTransform = glm::rotate(boxTransform, rotation.z, glm::vec3(.0f, .0f, 1.0f));
 
-            m_material->SetUniformValue("BoxMatrix", boxTransform);
+            m_material->SetUniformValue("BoxMatrix", viewTransform * boxTransform);
 
             ImGui::DragFloat("Box Size", m_material->GetDataUniformPointer<float>("BoxSize"), .1f);
             ImGui::TreePop();
