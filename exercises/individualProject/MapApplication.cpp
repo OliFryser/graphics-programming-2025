@@ -2,6 +2,7 @@
 
 #include <ituGL/geometry/VertexFormat.h>
 #include <ituGL/texture/Texture2DObject.h>
+#include <ituGL/renderer/ForwardRenderPass.h>
 
 #include <glm/gtx/transform.hpp>  // for matrix transformations
 
@@ -18,8 +19,10 @@
 MapApplication::MapApplication()
     : Application(1024, 1024, "Individual Project")
     , m_gridX(128), m_gridY(128)
+    , m_gridWidth(4), m_gridHeight(4)
     , m_vertexShaderLoader(Shader::Type::VertexShader)
     , m_fragmentShaderLoader(Shader::Type::FragmentShader)
+    , m_renderer(GetDevice())
 {
 }
 
@@ -39,6 +42,20 @@ void MapApplication::Initialize()
     //Enable depth test
     GetDevice().EnableFeature(GL_DEPTH_TEST);
 
+    // Create the main camera
+    std::shared_ptr<Camera> camera = std::make_shared<Camera>();
+    camera->SetViewMatrix(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0), glm::vec3(0.0f, 1.0f, 0.0));
+    float fov = 1.0f;
+    camera->SetPerspectiveProjectionMatrix(fov, GetMainWindow().GetAspectRatio(), 0.1f, 100.0f);
+
+    // Create a scene node for the camera
+    std::shared_ptr<SceneCamera> sceneCamera = std::make_shared<SceneCamera>("camera", camera);
+
+    // Set the camera scene node to be controlled by the camera controller
+    m_cameraController.SetCamera(sceneCamera);
+
+    m_renderer.AddRenderPass(std::make_unique<ForwardRenderPass>());
+
     //Enable wireframe
     //GetDevice().SetWireframeEnabled(true);
 }
@@ -48,14 +65,7 @@ void MapApplication::Update()
     Application::Update();
 
     const Window& window = GetMainWindow();
-
-    glm::vec2 mousePosition = window.GetMousePosition(true);
-    m_camera.SetViewMatrix(glm::vec3(0.0f, 15.0f, 15.0f), glm::vec3(mousePosition, 0.0f));
-
-    int width, height;
-    window.GetDimensions(width, height);
-    float aspectRatio = static_cast<float>(width) / height;
-    m_camera.SetPerspectiveProjectionMatrix(1.0f, aspectRatio, 0.1f, 100.0f);
+    m_cameraController.Update(GetMainWindow(), GetDeltaTime());
 
     m_waterMaterial->SetUniformValue("Time", GetCurrentTime());
 }
@@ -67,37 +77,48 @@ void MapApplication::Render()
     // Clear color and depth
     GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
 
-    glm::mat4 q1Translate = glm::translate(glm::vec3(0, 0, -1.0f));
-    glm::mat4 q2Translate = glm::translate(glm::vec3(-1.0f, 0, -1.0f));
-    glm::mat4 q3Translate = glm::translate(glm::vec3(-1.0f, 0, 0));
-    glm::mat4 q4Translate = glm::translate(glm::vec3(0, 0, 0));
+    // Render the scene
+    m_renderer.Render();
+
+    std::vector<glm::mat4> gridPositionTranslations;
+    for (int z = 0; z < m_gridHeight; z++)
+    {
+        for (int x = 0; x < m_gridWidth; x++)
+        {
+            gridPositionTranslations.push_back(glm::translate(glm::vec3(-x, 0.0f, -z)));
+        }
+    }
 
     glm::mat4 pushDownTranslate = glm::translate(glm::vec3(0.0f, -.5f, 0.0f));
-
-    // Terrain patches
-    DrawObject(m_terrainPatch, *m_terrainMaterials[1], glm::scale(glm::vec3(10.0f)) * q1Translate * pushDownTranslate);
-    DrawObject(m_terrainPatch, *m_terrainMaterials[3], glm::scale(glm::vec3(10.0f)) * q2Translate * pushDownTranslate);
-    DrawObject(m_terrainPatch, *m_terrainMaterials[2], glm::scale(glm::vec3(10.0f)) * q3Translate * pushDownTranslate);
-    DrawObject(m_terrainPatch, *m_terrainMaterials[0], glm::scale(glm::vec3(10.0f)) * q4Translate * pushDownTranslate);
-
     glm::mat4 waterLevel = glm::translate(glm::vec3(0.0f, -0.15f, 0.0f));
 
-    // Water patches
-    DrawObject(m_terrainPatch, *m_waterMaterial, glm::scale(glm::vec3(10.0f)) * q1Translate * waterLevel);
-    DrawObject(m_terrainPatch, *m_waterMaterial, glm::scale(glm::vec3(10.0f)) * q2Translate * waterLevel);
-    DrawObject(m_terrainPatch, *m_waterMaterial, glm::scale(glm::vec3(10.0f)) * q3Translate * waterLevel);
-    DrawObject(m_terrainPatch, *m_waterMaterial, glm::scale(glm::vec3(10.0f)) * q4Translate * waterLevel);
+    for (int i = 0; i < m_gridWidth * m_gridHeight; i++)
+    {
+        DrawObject(
+            m_terrainPatch, 
+            *m_terrainMaterials[i], 
+            glm::scale(glm::vec3(10.0f)) * gridPositionTranslations[i] * pushDownTranslate);
+        
+        DrawObject(
+            m_terrainPatch, 
+            *m_waterMaterial, 
+            glm::scale(glm::vec3(10.0f)) * gridPositionTranslations[i] * waterLevel);
 
+    }
 }
 
 void MapApplication::InitializeTextures()
 {
     m_defaultTexture = CreateDefaultTexture();
-    m_heightMaps.push_back(CreateHeightMap(m_gridX, m_gridY, glm::ivec2(0, 0)));
-    m_heightMaps.push_back(CreateHeightMap(m_gridX, m_gridY, glm::ivec2(0, -1)));
-    m_heightMaps.push_back(CreateHeightMap(m_gridX, m_gridY, glm::ivec2(-1, 0)));
-    m_heightMaps.push_back(CreateHeightMap(m_gridX, m_gridY, glm::ivec2(-1, -1)));
+    for (int z = 0; z < m_gridHeight; z++)
+    {
+        for (int x = 0; x < m_gridWidth; x++)
+        {
+            m_heightMaps.push_back(CreateHeightMap(m_gridX, m_gridY, glm::ivec2(-x, -z)));
+        }
+    }
 
+    
     m_dirtTexture = LoadTexture("textures/dirt.png");
     m_grassTexture = LoadTexture("textures/grass.jpg");
     m_rockTexture = LoadTexture("textures/rock.jpg");
@@ -134,9 +155,9 @@ void MapApplication::InitializeMaterials()
     m_terrainMaterials[0]->SetUniformValue("ColorTextureScale", glm::vec2(0.05f));
     m_terrainMaterials[0]->SetUniformValue("Color", glm::vec4(1.0f));
 
-    for (int i = 1; i < 4; i++)
+    for (int i = 1; i < m_gridWidth * m_gridHeight; i++)
     {
-        std::shared_ptr<Material> material = std::make_shared<Material>(*m_terrainMaterials[0].get());
+        std::shared_ptr<Material> material = std::make_shared<Material>(*m_terrainMaterials[0]);
         m_terrainMaterials.push_back(material);
         m_terrainMaterials[i]->SetUniformValue("Heightmap", m_heightMaps[i]);
     }
