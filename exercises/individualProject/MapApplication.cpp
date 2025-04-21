@@ -4,7 +4,8 @@
 #include <ituGL/texture/Texture2DObject.h>
 #include <ituGL/renderer/ForwardRenderPass.h>
 #include <ituGL/scene/SceneCamera.h>
-
+#include <ituGL/scene/SceneModel.h>
+#include <ituGL/geometry/Model.h>
 
 #include <glm/gtx/transform.hpp>  // for matrix transformations
 
@@ -18,6 +19,7 @@
 #include <iostream>
 #include <numbers>  // for PI constant
 #include <imgui.h>
+#include <format>
 
 MapApplication::MapApplication()
     : Application(1024, 1024, "Individual Project")
@@ -42,9 +44,11 @@ void MapApplication::Initialize()
 
     // Build meshes and keep them in a list
     InitializeMeshes();
+    InitializeModels();
+    
     InitializeCamera();
     InitializeRenderer();
-
+    
     //Enable depth test
     GetDevice().EnableFeature(GL_DEPTH_TEST);
 
@@ -73,32 +77,6 @@ void MapApplication::Render()
 
     // Render the scene
     m_renderer.Render();
-
-    std::vector<glm::mat4> gridPositionTranslations;
-    for (int z = 0; z < m_gridHeight; z++)
-    {
-        for (int x = 0; x < m_gridWidth; x++)
-        {
-            gridPositionTranslations.push_back(glm::translate(glm::vec3(-x, 0.0f, -z)));
-        }
-    }
-
-    glm::mat4 pushDownTranslate = glm::translate(glm::vec3(0.0f, -.5f, 0.0f));
-    glm::mat4 waterLevel = glm::translate(glm::vec3(0.0f, -0.15f, 0.0f));
-
-    for (int i = 0; i < m_gridWidth * m_gridHeight; i++)
-    {
-        DrawObject(
-            m_terrainPatch, 
-            *m_terrainMaterials[i], 
-            glm::scale(glm::vec3(10.0f)) * gridPositionTranslations[i] * pushDownTranslate);
-        
-        DrawObject(
-            m_terrainPatch, 
-            *m_waterMaterial, 
-            glm::scale(glm::vec3(10.0f)) * gridPositionTranslations[i] * waterLevel);
-
-    }
 
     RenderGui();
 }
@@ -138,21 +116,26 @@ void MapApplication::InitializeTextures()
 
 void MapApplication::InitializeMaterials()
 {
-    // Default shader program
-    Shader defaultVS = m_vertexShaderLoader.Load("shaders/default.vert");
-    Shader defaultFS = m_fragmentShaderLoader.Load("shaders/default.frag");
-    std::shared_ptr<ShaderProgram> defaultShaderProgram = std::make_shared<ShaderProgram>();
-    defaultShaderProgram->Build(defaultVS, defaultFS);
-
-    // Default material
-    m_defaultMaterial = std::make_shared<Material>(defaultShaderProgram);
-    m_defaultMaterial->SetUniformValue("Color", glm::vec4(1.0f));
-
     // terrain material
     Shader terrainVS = m_vertexShaderLoader.Load("shaders/terrain.vert");
     Shader terrainFS = m_fragmentShaderLoader.Load("shaders/terrain.frag");
     std::shared_ptr<ShaderProgram> terrainShaderProgram = std::make_shared<ShaderProgram>();
     terrainShaderProgram->Build(terrainVS, terrainFS);
+
+    ShaderProgram::Location viewProjMatrixLocation = terrainShaderProgram->GetUniformLocation("ViewProjMatrix");
+    ShaderProgram::Location locationWorldMatrix = terrainShaderProgram->GetUniformLocation("WorldMatrix");
+    // Register shader with renderer
+    m_renderer.RegisterShaderProgram(terrainShaderProgram,
+        [=](const ShaderProgram& shaderProgram, const glm::mat4& worldMatrix, const Camera& camera, bool cameraChanged)
+        {
+            if (cameraChanged)
+            {
+                shaderProgram.SetUniform(viewProjMatrixLocation, camera.GetViewProjectionMatrix());
+            }
+            shaderProgram.SetUniform(locationWorldMatrix, worldMatrix);
+        },
+        m_renderer.GetDefaultUpdateLightsFunction(*terrainShaderProgram)
+    );
 
     m_terrainMaterials.push_back(std::make_shared<Material>(terrainShaderProgram));
     m_terrainMaterials[0]->SetUniformValue("ColorTexture0", m_dirtTexture);
@@ -164,6 +147,7 @@ void MapApplication::InitializeMaterials()
     m_terrainMaterials[0]->SetUniformValue("ColorTextureRange23", glm::vec2(.7f, .8f));
     m_terrainMaterials[0]->SetUniformValue("ColorTextureScale", glm::vec2(0.05f));
     m_terrainMaterials[0]->SetUniformValue("Color", glm::vec4(1.0f));
+
 
     for (int i = 1; i < m_gridWidth * m_gridHeight; i++)
     {
@@ -180,6 +164,21 @@ void MapApplication::InitializeMaterials()
     std::shared_ptr<ShaderProgram> waterShaderProgram = std::make_shared<ShaderProgram>();
     waterShaderProgram->Build(waterVS, waterFS);
 
+    ShaderProgram::Location waterViewProjMatrixLocation = waterShaderProgram->GetUniformLocation("ViewProjMatrix");
+    ShaderProgram::Location waterLocationWorldMatrix = waterShaderProgram->GetUniformLocation("WorldMatrix");
+    // Register shader with renderer
+    m_renderer.RegisterShaderProgram(waterShaderProgram,
+        [=](const ShaderProgram& shaderProgram, const glm::mat4& worldMatrix, const Camera& camera, bool cameraChanged)
+        {
+            if (cameraChanged)
+            {
+                shaderProgram.SetUniform(waterViewProjMatrixLocation, camera.GetViewProjectionMatrix());
+            }
+            shaderProgram.SetUniform(waterLocationWorldMatrix, worldMatrix);
+        },
+        m_renderer.GetDefaultUpdateLightsFunction(*waterShaderProgram)
+    );
+
     m_waterMaterial = std::make_shared<Material>(waterShaderProgram);
     m_waterMaterial->SetUniformValue("ColorTexture", m_waterTexture);
     m_waterMaterial->SetUniformValue("ColorTextureScale", glm::vec2(0.05f));
@@ -190,7 +189,41 @@ void MapApplication::InitializeMaterials()
 
 void MapApplication::InitializeMeshes()
 {
-    CreateTerrainMesh(m_terrainPatch, m_gridX, m_gridY);
+    m_terrainPatch = std::make_shared<Mesh>();
+    CreateTerrainMesh(m_gridX, m_gridY);
+}
+
+void MapApplication::InitializeModels()
+{
+    std::vector<glm::mat4> gridPositionTranslations;
+    for (int z = 0; z < m_gridHeight; z++)
+    {
+        for (int x = 0; x < m_gridWidth; x++)
+        {
+            gridPositionTranslations.push_back(glm::translate(glm::vec3(-x, 0.0f, -z)));
+        }
+    }
+
+    glm::mat4 pushDownTranslate = glm::translate(glm::vec3(0.0f, -.5f, 0.0f));
+    glm::mat4 waterLevel = glm::translate(glm::vec3(0.0f, -0.15f, 0.0f));
+
+    auto terrainModelPointer = std::make_shared<Model>(m_terrainPatch);
+    auto waterModelPointer = std::make_shared<Model>(m_terrainPatch);
+    waterModelPointer->SetMaterial(0, m_waterMaterial);
+
+    for (int i = 0; i < m_gridWidth * m_gridHeight; i++)
+    {
+        /*auto transform = glm::scale(glm::vec3(10.0f)) * gridPositionTranslations[i] * pushDownTranslate;
+        terrainModelPointer->SetMaterial(0, m_terrainMaterials[i]);
+        const std::string& terrainChunkName = std::format("Terrain chunk {}", i);
+        auto terrainChunkNode = std::make_shared<SceneModel>(terrainChunkName, terrainModelPointer, transform);
+        m_scene.AddSceneNode(terrainChunkNode);
+        
+        const std::string& waterChunkName = std::format("Water chunk {}", i);
+        m_scene.AddSceneNode(
+            std::make_shared<SceneModel>(
+                waterChunkName, waterModelPointer, glm::scale(glm::vec3(10.0f)) * gridPositionTranslations[i] * waterLevel));*/
+    }
 }
 
 void MapApplication::InitializeRenderer()
@@ -293,21 +326,7 @@ std::shared_ptr<Texture2DObject> MapApplication::CreateHeightMap(unsigned int wi
     return heightmap;
 }
 
-void MapApplication::DrawObject(const Mesh& mesh, Material& material, const glm::mat4& worldMatrix)
-{
-    material.Use();
-    const Camera& camera = *m_cameraController.GetCamera()->GetCamera();
-
-    ShaderProgram& shaderProgram = *material.GetShaderProgram();
-    ShaderProgram::Location locationWorldMatrix = shaderProgram.GetUniformLocation("WorldMatrix");
-    material.GetShaderProgram()->SetUniform(locationWorldMatrix, worldMatrix);
-    ShaderProgram::Location locationViewProjMatrix = shaderProgram.GetUniformLocation("ViewProjMatrix");
-    material.GetShaderProgram()->SetUniform(locationViewProjMatrix, camera.GetViewProjectionMatrix());
-
-    mesh.DrawSubmesh(0);
-}
-
-void MapApplication::CreateTerrainMesh(Mesh& mesh, unsigned int gridX, unsigned int gridY)
+void MapApplication::CreateTerrainMesh(unsigned int gridX, unsigned int gridY)
 {
     // Define the vertex structure
     struct Vertex
@@ -372,6 +391,6 @@ void MapApplication::CreateTerrainMesh(Mesh& mesh, unsigned int gridX, unsigned 
         }
     }
 
-    mesh.AddSubmesh<Vertex, unsigned int, VertexFormat::LayoutIterator>(Drawcall::Primitive::Triangles, vertices, indices,
+    m_terrainPatch->AddSubmesh<Vertex, unsigned int, VertexFormat::LayoutIterator>(Drawcall::Primitive::Triangles, vertices, indices,
         vertexFormat.LayoutBegin(static_cast<int>(vertices.size()), true /* interleaved */), vertexFormat.LayoutEnd());
 }
