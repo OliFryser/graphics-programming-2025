@@ -7,9 +7,9 @@
 #include <ituGL/asset/ShaderLoader.h>
 #include <ituGL/geometry/Mesh.h>
 #include <ituGL/camera/CameraController.h>
+#include <ituGL/utils/DearImGui.h>
 #include <ituGL/camera/Camera.h>
 #include <ituGL/shader/Material.h>
-#include <ituGL/utils/DearImGui.h>
 
 #include <glm/mat4x4.hpp>
 #include <vector>
@@ -25,12 +25,16 @@ protected:
     void Initialize() override;
     void Update() override;
     void Render() override;
+    void Cleanup() override;
 
 private:
     void InitializeTextures();
     void InitializeMaterials();
     void InitializeMeshes();
+    void InitializeCamera();
+    void InitializeRenderer();
 
+    void RenderGui();
     void DrawObject(const Mesh& mesh, Material& material, const glm::mat4& worldMatrix);
 
     std::shared_ptr<Texture2DObject> CreateDefaultTexture();
@@ -50,7 +54,6 @@ private:
     Renderer m_renderer;
     Scene m_scene;
 
-    // Helper object for debug GUI
     DearImGui m_imGui;
 
     // Camera controller
@@ -60,7 +63,7 @@ private:
     std::shared_ptr<Material> m_defaultMaterial;
     std::vector<std::shared_ptr<Material>> m_terrainMaterials;
     std::shared_ptr<Material> m_waterMaterial;
-
+    
     std::shared_ptr<Texture2DObject> m_defaultTexture;
     std::shared_ptr<Texture2DObject> m_dirtTexture;
     std::shared_ptr<Texture2DObject> m_grassTexture;

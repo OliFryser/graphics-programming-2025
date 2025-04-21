@@ -3,6 +3,8 @@
 #include <ituGL/geometry/VertexFormat.h>
 #include <ituGL/texture/Texture2DObject.h>
 #include <ituGL/renderer/ForwardRenderPass.h>
+#include <ituGL/scene/SceneCamera.h>
+
 
 #include <glm/gtx/transform.hpp>  // for matrix transformations
 
@@ -15,6 +17,7 @@
 #include <cmath>
 #include <iostream>
 #include <numbers>  // for PI constant
+#include <imgui.h>
 
 MapApplication::MapApplication()
     : Application(1024, 1024, "Individual Project")
@@ -29,6 +32,7 @@ MapApplication::MapApplication()
 void MapApplication::Initialize()
 {
     Application::Initialize();
+    m_imGui.Initialize(GetMainWindow());
 
     // Build textures and keep them in a list
     InitializeTextures();
@@ -38,23 +42,11 @@ void MapApplication::Initialize()
 
     // Build meshes and keep them in a list
     InitializeMeshes();
+    InitializeCamera();
+    InitializeRenderer();
 
     //Enable depth test
     GetDevice().EnableFeature(GL_DEPTH_TEST);
-
-    // Create the main camera
-    std::shared_ptr<Camera> camera = std::make_shared<Camera>();
-    camera->SetViewMatrix(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0), glm::vec3(0.0f, 1.0f, 0.0));
-    float fov = 1.0f;
-    camera->SetPerspectiveProjectionMatrix(fov, GetMainWindow().GetAspectRatio(), 0.1f, 100.0f);
-
-    // Create a scene node for the camera
-    std::shared_ptr<SceneCamera> sceneCamera = std::make_shared<SceneCamera>("camera", camera);
-
-    // Set the camera scene node to be controlled by the camera controller
-    m_cameraController.SetCamera(sceneCamera);
-
-    m_renderer.AddRenderPass(std::make_unique<ForwardRenderPass>());
 
     //Enable wireframe
     //GetDevice().SetWireframeEnabled(true);
@@ -63,9 +55,11 @@ void MapApplication::Initialize()
 void MapApplication::Update()
 {
     Application::Update();
+    const Camera& camera = *m_cameraController.GetCamera()->GetCamera();
 
     const Window& window = GetMainWindow();
     m_cameraController.Update(GetMainWindow(), GetDeltaTime());
+    m_renderer.SetCurrentCamera(camera);
 
     m_waterMaterial->SetUniformValue("Time", GetCurrentTime());
 }
@@ -105,6 +99,23 @@ void MapApplication::Render()
             glm::scale(glm::vec3(10.0f)) * gridPositionTranslations[i] * waterLevel);
 
     }
+
+    RenderGui();
+}
+
+void MapApplication::RenderGui()
+{
+    m_imGui.BeginFrame();
+
+    // Draw GUI for camera controller
+    m_cameraController.DrawGUI(m_imGui);
+
+    m_imGui.EndFrame();
+}
+
+void MapApplication::Cleanup()
+{
+    m_imGui.Cleanup();
 }
 
 void MapApplication::InitializeTextures()
@@ -118,7 +129,6 @@ void MapApplication::InitializeTextures()
         }
     }
 
-    
     m_dirtTexture = LoadTexture("textures/dirt.png");
     m_grassTexture = LoadTexture("textures/grass.jpg");
     m_rockTexture = LoadTexture("textures/rock.jpg");
@@ -181,6 +191,27 @@ void MapApplication::InitializeMaterials()
 void MapApplication::InitializeMeshes()
 {
     CreateTerrainMesh(m_terrainPatch, m_gridX, m_gridY);
+}
+
+void MapApplication::InitializeRenderer()
+{
+    m_renderer.AddRenderPass(std::make_unique<ForwardRenderPass>());
+}
+
+void MapApplication::InitializeCamera()
+{
+    // Create the main camera
+    std::shared_ptr<Camera> camera = std::make_shared<Camera>();
+    camera->SetViewMatrix(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0), glm::vec3(0.0f, 1.0f, 0.0));
+    float fov = 1.0f;
+    camera->SetPerspectiveProjectionMatrix(fov, GetMainWindow().GetAspectRatio(), 0.1f, 100.0f);
+
+    // Create a scene node for the camera
+    std::shared_ptr<SceneCamera> sceneCamera = std::make_shared<SceneCamera>("camera", camera);
+
+    // Set the camera scene node to be controlled by the camera controller
+    m_cameraController.SetCamera(sceneCamera);
+    m_scene.AddSceneNode(sceneCamera);
 }
 
 std::shared_ptr<Texture2DObject> MapApplication::CreateDefaultTexture()
@@ -265,12 +296,13 @@ std::shared_ptr<Texture2DObject> MapApplication::CreateHeightMap(unsigned int wi
 void MapApplication::DrawObject(const Mesh& mesh, Material& material, const glm::mat4& worldMatrix)
 {
     material.Use();
+    const Camera& camera = *m_cameraController.GetCamera()->GetCamera();
 
     ShaderProgram& shaderProgram = *material.GetShaderProgram();
     ShaderProgram::Location locationWorldMatrix = shaderProgram.GetUniformLocation("WorldMatrix");
     material.GetShaderProgram()->SetUniform(locationWorldMatrix, worldMatrix);
     ShaderProgram::Location locationViewProjMatrix = shaderProgram.GetUniformLocation("ViewProjMatrix");
-    material.GetShaderProgram()->SetUniform(locationViewProjMatrix, m_camera.GetViewProjectionMatrix());
+    material.GetShaderProgram()->SetUniform(locationViewProjMatrix, camera.GetViewProjectionMatrix());
 
     mesh.DrawSubmesh(0);
 }
