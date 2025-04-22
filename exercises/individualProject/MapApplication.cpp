@@ -6,6 +6,7 @@
 #include <ituGL/scene/SceneCamera.h>
 #include <ituGL/scene/SceneModel.h>
 #include <ituGL/geometry/Model.h>
+#include <ituGL/scene/Transform.h>
 
 #include <glm/gtx/transform.hpp>  // for matrix transformations
 
@@ -195,34 +196,40 @@ void MapApplication::InitializeMeshes()
 
 void MapApplication::InitializeModels()
 {
-    std::vector<glm::mat4> gridPositionTranslations;
+    std::vector<glm::vec3> gridPositionTranslations;
     for (int z = 0; z < m_gridHeight; z++)
     {
         for (int x = 0; x < m_gridWidth; x++)
         {
-            gridPositionTranslations.push_back(glm::translate(glm::vec3(-x, 0.0f, -z)));
+            gridPositionTranslations.push_back(glm::vec3(-x, 0.0f, -z));
         }
     }
 
-    glm::mat4 pushDownTranslate = glm::translate(glm::vec3(0.0f, -.5f, 0.0f));
-    glm::mat4 waterLevel = glm::translate(glm::vec3(0.0f, -0.15f, 0.0f));
+    glm::vec3 pushDownTranslate = glm::vec3(0.0f, -.5f, 0.0f);
+    glm::vec3 waterLevel = glm::vec3(0.0f, -0.15f, 0.0f);
+    auto terrainPatchPtr = std::make_shared<Mesh>();
 
-    auto terrainModelPointer = std::make_shared<Model>(m_terrainPatch);
     auto waterModelPointer = std::make_shared<Model>(m_terrainPatch);
-    waterModelPointer->SetMaterial(0, m_waterMaterial);
+    waterModelPointer->AddMaterial(m_waterMaterial);
 
     for (int i = 0; i < m_gridWidth * m_gridHeight; i++)
     {
-        /*auto transform = glm::scale(glm::vec3(10.0f)) * gridPositionTranslations[i] * pushDownTranslate;
-        terrainModelPointer->SetMaterial(0, m_terrainMaterials[i]);
+        auto terrainModelPointer = std::make_shared<Model>(m_terrainPatch);
+        std::shared_ptr<Transform> transform = std::make_shared<Transform>();
+        transform->SetScale(glm::vec3(10.0f));
+        transform->SetTranslation(gridPositionTranslations[i] + pushDownTranslate);
+        terrainModelPointer->AddMaterial(m_terrainMaterials[i]);
         const std::string& terrainChunkName = std::format("Terrain chunk {}", i);
         auto terrainChunkNode = std::make_shared<SceneModel>(terrainChunkName, terrainModelPointer, transform);
         m_scene.AddSceneNode(terrainChunkNode);
         
+        auto waterTransform = std::make_shared<Transform>();
+        waterTransform->SetScale(glm::vec3(10.0f));
+        waterTransform->SetTranslation(gridPositionTranslations[i] + waterLevel);
         const std::string& waterChunkName = std::format("Water chunk {}", i);
         m_scene.AddSceneNode(
             std::make_shared<SceneModel>(
-                waterChunkName, waterModelPointer, glm::scale(glm::vec3(10.0f)) * gridPositionTranslations[i] * waterLevel));*/
+                waterChunkName, waterModelPointer, waterTransform));
     }
 }
 
