@@ -7,6 +7,7 @@
 #include <ituGL/scene/SceneModel.h>
 #include <ituGL/geometry/Model.h>
 #include <ituGL/scene/Transform.h>
+#include <ituGL/scene/RendererSceneVisitor.h>
 
 #include <glm/gtx/transform.hpp>  // for matrix transformations
 
@@ -25,7 +26,7 @@
 MapApplication::MapApplication()
     : Application(1024, 1024, "Individual Project")
     , m_gridX(128), m_gridY(128)
-    , m_gridWidth(4), m_gridHeight(4)
+    , m_gridWidth(10), m_gridHeight(10)
     , m_vertexShaderLoader(Shader::Type::VertexShader)
     , m_fragmentShaderLoader(Shader::Type::FragmentShader)
     , m_renderer(GetDevice())
@@ -52,7 +53,6 @@ void MapApplication::Initialize()
     
     //Enable depth test
     GetDevice().EnableFeature(GL_DEPTH_TEST);
-
     //Enable wireframe
     //GetDevice().SetWireframeEnabled(true);
 }
@@ -64,9 +64,12 @@ void MapApplication::Update()
 
     const Window& window = GetMainWindow();
     m_cameraController.Update(GetMainWindow(), GetDeltaTime());
-    m_renderer.SetCurrentCamera(camera);
 
     m_waterMaterial->SetUniformValue("Time", GetCurrentTime());
+
+    // Add the scene nodes to the renderer
+    RendererSceneVisitor rendererSceneVisitor(m_renderer);
+    m_scene.AcceptVisitor(rendererSceneVisitor);
 }
 
 void MapApplication::Render()
@@ -215,17 +218,17 @@ void MapApplication::InitializeModels()
     for (int i = 0; i < m_gridWidth * m_gridHeight; i++)
     {
         auto terrainModelPointer = std::make_shared<Model>(m_terrainPatch);
-        std::shared_ptr<Transform> transform = std::make_shared<Transform>();
-        transform->SetScale(glm::vec3(10.0f));
-        transform->SetTranslation(gridPositionTranslations[i] + pushDownTranslate);
+        std::shared_ptr<Transform> terrainTransform = std::make_shared<Transform>();
+        terrainTransform->SetScale(glm::vec3(10.0f));
+        terrainTransform->SetTranslation(glm::vec3(10.0f) * (gridPositionTranslations[i] + pushDownTranslate));
         terrainModelPointer->AddMaterial(m_terrainMaterials[i]);
         const std::string& terrainChunkName = std::format("Terrain chunk {}", i);
-        auto terrainChunkNode = std::make_shared<SceneModel>(terrainChunkName, terrainModelPointer, transform);
+        auto terrainChunkNode = std::make_shared<SceneModel>(terrainChunkName, terrainModelPointer, terrainTransform);
         m_scene.AddSceneNode(terrainChunkNode);
         
         auto waterTransform = std::make_shared<Transform>();
         waterTransform->SetScale(glm::vec3(10.0f));
-        waterTransform->SetTranslation(gridPositionTranslations[i] + waterLevel);
+        waterTransform->SetTranslation(glm::vec3(10.0f) * (gridPositionTranslations[i] + waterLevel));
         const std::string& waterChunkName = std::format("Water chunk {}", i);
         m_scene.AddSceneNode(
             std::make_shared<SceneModel>(
@@ -386,8 +389,8 @@ void MapApplication::CreateTerrainMesh(unsigned int gridX, unsigned int gridY)
                 unsigned int bottom_left = bottom_right - 1;
 
                 //Triangle 1
-                indices.push_back(bottom_left);
                 indices.push_back(bottom_right);
+                indices.push_back(bottom_left);
                 indices.push_back(top_left);
 
                 //Triangle 2

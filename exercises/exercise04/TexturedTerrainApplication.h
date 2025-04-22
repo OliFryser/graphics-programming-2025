@@ -23,8 +23,8 @@ protected:
 
 private:
     void InitializeTextures();
-    void InitializeMaterials();
     void InitializeMeshes();
+    void InitializeMaterials();
 
     void DrawObject(const Mesh& mesh, Material& material, const glm::mat4& worldMatrix);
 
