@@ -23,6 +23,7 @@ public:
 
 protected:
     void Initialize() override;
+    void InitializeLights();
     void Update() override;
     void Render() override;
     void Cleanup() override;

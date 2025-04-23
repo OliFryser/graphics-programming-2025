@@ -3,11 +3,16 @@
 #include <ituGL/geometry/VertexFormat.h>
 #include <ituGL/texture/Texture2DObject.h>
 #include <ituGL/renderer/ForwardRenderPass.h>
-#include <ituGL/scene/SceneCamera.h>
-#include <ituGL/scene/SceneModel.h>
-#include <ituGL/geometry/Model.h>
+
 #include <ituGL/scene/Transform.h>
 #include <ituGL/scene/RendererSceneVisitor.h>
+#include <ituGL/scene/ImGuiSceneVisitor.h>
+#include <ituGL/scene/SceneCamera.h>
+#include <ituGL/scene/SceneModel.h>
+#include <ituGL/scene/SceneLight.h>
+
+#include <ituGL/lighting/DirectionalLight.h>
+#include <ituGL/geometry/Model.h>
 
 #include <glm/gtx/transform.hpp>  // for matrix transformations
 
@@ -26,7 +31,7 @@
 MapApplication::MapApplication()
     : Application(1024, 1024, "Individual Project")
     , m_gridX(128), m_gridY(128)
-    , m_gridWidth(10), m_gridHeight(10)
+    , m_gridWidth(2), m_gridHeight(2)
     , m_vertexShaderLoader(Shader::Type::VertexShader)
     , m_fragmentShaderLoader(Shader::Type::FragmentShader)
     , m_renderer(GetDevice())
@@ -48,6 +53,8 @@ void MapApplication::Initialize()
     InitializeMeshes();
     InitializeModels();
     
+    InitializeLights();
+
     InitializeCamera();
     InitializeRenderer();
     
@@ -55,6 +62,15 @@ void MapApplication::Initialize()
     GetDevice().EnableFeature(GL_DEPTH_TEST);
     //Enable wireframe
     //GetDevice().SetWireframeEnabled(true);
+}
+
+void MapApplication::InitializeLights()
+{
+    // Create a directional light and add it to the scene
+    std::shared_ptr<DirectionalLight> directionalLight = std::make_shared<DirectionalLight>();
+    directionalLight->SetDirection(glm::vec3(-0.3f, -1.0f, -0.3f)); // It will be normalized inside the function
+    directionalLight->SetIntensity(3.0f);
+    m_scene.AddSceneNode(std::make_shared<SceneLight>("directional light", directionalLight));
 }
 
 void MapApplication::Update()
@@ -88,7 +104,11 @@ void MapApplication::Render()
 void MapApplication::RenderGui()
 {
     m_imGui.BeginFrame();
-
+    
+    // Draw GUI for scene nodes, using the visitor pattern
+    ImGuiSceneVisitor imGuiVisitor(m_imGui, "Scene");
+    m_scene.AcceptVisitor(imGuiVisitor);
+    
     // Draw GUI for camera controller
     m_cameraController.DrawGUI(m_imGui);
 
@@ -127,6 +147,7 @@ void MapApplication::InitializeMaterials()
     terrainShaderProgram->Build(terrainVS, terrainFS);
 
     ShaderProgram::Location viewProjMatrixLocation = terrainShaderProgram->GetUniformLocation("ViewProjMatrix");
+    ShaderProgram::Location cameraPositionLocation = terrainShaderProgram->GetUniformLocation("CameraPosition");
     ShaderProgram::Location locationWorldMatrix = terrainShaderProgram->GetUniformLocation("WorldMatrix");
     // Register shader with renderer
     m_renderer.RegisterShaderProgram(terrainShaderProgram,
@@ -134,6 +155,7 @@ void MapApplication::InitializeMaterials()
         {
             if (cameraChanged)
             {
+                shaderProgram.SetUniform(cameraPositionLocation, camera.ExtractTranslation());
                 shaderProgram.SetUniform(viewProjMatrixLocation, camera.GetViewProjectionMatrix());
             }
             shaderProgram.SetUniform(locationWorldMatrix, worldMatrix);
@@ -245,7 +267,7 @@ void MapApplication::InitializeCamera()
 {
     // Create the main camera
     std::shared_ptr<Camera> camera = std::make_shared<Camera>();
-    camera->SetViewMatrix(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0), glm::vec3(0.0f, 1.0f, 0.0));
+    camera->SetViewMatrix(glm::vec3(10.0f, 10.0f, 10.0f), glm::vec3(0.0f, 0.0f, -1.0), glm::vec3(0.0f, 1.0f, 0.0));
     float fov = 1.0f;
     camera->SetPerspectiveProjectionMatrix(fov, GetMainWindow().GetAspectRatio(), 0.1f, 100.0f);
 
