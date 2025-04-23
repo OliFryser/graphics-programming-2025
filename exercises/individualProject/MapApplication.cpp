@@ -370,6 +370,7 @@ void MapApplication::CreateTerrainMesh(unsigned int gridX, unsigned int gridY)
         glm::vec3 position;
         glm::vec3 normal;
         glm::vec2 texCoord;
+        // TODO: Add tangent and bitangent
     };
 
     // Define the vertex format (should match the vertex structure)
