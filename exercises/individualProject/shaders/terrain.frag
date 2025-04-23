@@ -1,5 +1,3 @@
-#version 330 core
-
 in vec3 WorldPosition;
 in vec3 WorldNormal;
 in vec2 TexCoord;
@@ -19,40 +17,7 @@ uniform vec2 ColorTextureRange12;
 uniform vec2 ColorTextureRange23;
 uniform vec2 ColorTextureScale;
 
-uniform vec3 AmbientColor;
-uniform float AmbientReflection;
-
-uniform vec3 LightColor;
-uniform vec3 LightPosition;
-uniform float DiffuseReflection;
-
-uniform float SpecularReflection;
-uniform float SpecularExponent;
-
 uniform vec3 CameraPosition;
-
-vec3 GetAmbientReflection(vec4 color)
-{
-	// R_ambient = I_a * K_a * color
-	return AmbientColor * AmbientReflection * color.rgb;
-}
-
-vec3 GetDiffuseReflection(vec4 color, vec3 lightVector, vec3 worldNormal)
-{
-	return LightColor * DiffuseReflection * color.rgb * clamp(dot(worldNormal, lightVector), 0, 1);
-}
-
-vec3 GetSpecularReflection(vec3 worldNormal, vec3 halfVector)
-{
-	return LightColor * SpecularReflection * pow(clamp(dot(worldNormal, halfVector), 0, 1), SpecularExponent);
-}
-
-vec3 GetBlinnPhongReflection(vec4 color, vec3 lightVector, vec3 worldNormal, vec3 halfVector)
-{
-	return GetAmbientReflection(color) 
-		+ GetDiffuseReflection(color, lightVector, worldNormal) 
-		+ GetSpecularReflection(worldNormal, halfVector);
-}
 
 
 float inverseMix(vec2 range, float value)
@@ -69,18 +34,24 @@ void main()
 	vec4 color3 = texture(ColorTexture3, TexCoord * ColorTextureScale);
 
 	// Mix between them according to height ranges
-	vec4 color = color0;
-	color = mix(color, color1, inverseMix(ColorTextureRange01, Height));
-	color = mix(color, color2, inverseMix(ColorTextureRange12, Height));
-	color = mix(color, color3, inverseMix(ColorTextureRange23, Height));
-	
-//	vec3 lightVector = normalize(LightPosition - WorldPosition);
-	vec3 viewVector = normalize(CameraPosition - WorldPosition);
-//	vec3 halfVector = normalize(lightVector + viewVector);
-//	
-//	vec3 blinnPhongReflection = 
-//		GetBlinnPhongReflection(texture(ColorTexture, TexCoord) * Color, lightVector, normalize(WorldNormal), halfVector);
+	vec4 tex = color0;
+	tex = mix(tex, color1, inverseMix(ColorTextureRange01, Height));
+	tex = mix(tex, color2, inverseMix(ColorTextureRange12, Height));
+	tex = mix(tex, color3, inverseMix(ColorTextureRange23, Height));
 
-	FragColor = Color * color;
+	SurfaceData data;
+	data.normal = WorldNormal;
+	data.reflectionColor = Color.rgb * tex.rgb;
+	vec3 arm = vec3(1.0, 1.0, 1.0);
+	data.ambientReflectance = arm.x;
+	data.diffuseReflectance = 1.0;
+	data.specularReflectance = pow(1.0 - arm.y, 4);
+	data.specularExponent = 2.0 / pow(arm.y, 2) - 2.0;
+
+	vec3 position = WorldPosition;
+	vec3 viewDir = GetDirection(position, CameraPosition);
+	vec3 color = ComputeLighting(position, data, viewDir, true);
+	
+	FragColor = vec4(color, 1.0);
 	
 }

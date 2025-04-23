@@ -10,6 +10,7 @@ out vec2 TexCoord;
 out float Height;
 
 uniform sampler2D Heightmap;
+uniform sampler2D NormalMap;
 
 uniform mat4 WorldMatrix;
 uniform mat4 ViewProjMatrix;
@@ -17,8 +18,10 @@ uniform mat4 ViewProjMatrix;
 void main()
 {
 	vec4 height = texture(Heightmap, (VertexPosition.xz * 127 + 0.5)/128);
+	vec4 normal = texture(NormalMap, (VertexPosition.xz * 127 + 0.5)/128);
+
 	WorldPosition = (WorldMatrix * vec4(VertexPosition.x, height.x, VertexPosition.z, 1.0)).xyz;
-	WorldNormal = (WorldMatrix * vec4(VertexNormal, 0.0)).xyz;
+	WorldNormal = (WorldMatrix * vec4(normal.xyz, 0.0)).xyz;
 	TexCoord = VertexTexCoord;
 	Height = height.x;
 	

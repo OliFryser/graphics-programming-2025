@@ -38,8 +38,8 @@ private:
 
     void RenderGui();
 
+    void CreateHeightMap(unsigned int width, unsigned int height, glm::ivec2 coords);
     std::shared_ptr<Texture2DObject> CreateDefaultTexture();
-    std::shared_ptr<Texture2DObject> CreateHeightMap(unsigned int width, unsigned int height, glm::ivec2 coords);
     std::shared_ptr<Texture2DObject> LoadTexture(const char* path);
 
     void CreateTerrainMesh(unsigned int gridX, unsigned int gridY);
@@ -72,4 +72,5 @@ private:
     std::shared_ptr<Texture2DObject> m_waterTexture;
 
     std::vector<std::shared_ptr<Texture2DObject>> m_heightMaps;
+    std::vector<std::shared_ptr<Texture2DObject>> m_normalMaps;
 };

@@ -127,7 +127,7 @@ void MapApplication::InitializeTextures()
     {
         for (int x = 0; x < m_gridWidth; x++)
         {
-            m_heightMaps.push_back(CreateHeightMap(m_gridX, m_gridY, glm::ivec2(-x, -z)));
+            CreateHeightMap(m_gridX, m_gridY, glm::ivec2(-x, -z));
         }
     }
 
@@ -136,13 +136,21 @@ void MapApplication::InitializeTextures()
     m_rockTexture = LoadTexture("textures/rock.jpg");
     m_snowTexture = LoadTexture("textures/snow.jpg");
     m_waterTexture = LoadTexture("textures/water.png");
+    //m_waterTexture->SetParameter(TextureObject::ParameterEnum::WrapS, GL_CLAMP_TO_EDGE);
+    //m_waterTexture->SetParameter(TextureObject::ParameterEnum::WrapT, GL_CLAMP_TO_EDGE);
 }
 
 void MapApplication::InitializeMaterials()
 {
     // terrain material
+    std::vector<const char*> fragmentShaderPaths;
+    fragmentShaderPaths.push_back("shaders/version330.glsl");
+    fragmentShaderPaths.push_back("shaders/utils.glsl");
+    fragmentShaderPaths.push_back("shaders/blinn-phong.glsl");
+    fragmentShaderPaths.push_back("shaders/lighting.glsl");
+    fragmentShaderPaths.push_back("shaders/terrain.frag");
     Shader terrainVS = m_vertexShaderLoader.Load("shaders/terrain.vert");
-    Shader terrainFS = m_fragmentShaderLoader.Load("shaders/terrain.frag");
+    Shader terrainFS = m_fragmentShaderLoader.Load(fragmentShaderPaths);
     std::shared_ptr<ShaderProgram> terrainShaderProgram = std::make_shared<ShaderProgram>();
     terrainShaderProgram->Build(terrainVS, terrainFS);
 
@@ -180,9 +188,11 @@ void MapApplication::InitializeMaterials()
         std::shared_ptr<Material> material = std::make_shared<Material>(*m_terrainMaterials[0]);
         m_terrainMaterials.push_back(material);
         m_terrainMaterials[i]->SetUniformValue("Heightmap", m_heightMaps[i]);
+        m_terrainMaterials[i]->SetUniformValue("NormalMap", m_normalMaps[i]);
     }
 
     m_terrainMaterials[0]->SetUniformValue("Heightmap", m_heightMaps[0]);
+    m_terrainMaterials[0]->SetUniformValue("NormalMap", m_normalMaps[0]);
 
     // water material
     Shader waterVS = m_vertexShaderLoader.Load("shaders/water.vert");
@@ -324,11 +334,9 @@ std::shared_ptr<Texture2DObject> MapApplication::LoadTexture(const char* path)
     return texture;
 }
 
-std::shared_ptr<Texture2DObject> MapApplication::CreateHeightMap(unsigned int width, unsigned int height, glm::ivec2 coords)
+void MapApplication::CreateHeightMap(unsigned int width, unsigned int height, glm::ivec2 coords)
 {
     std::shared_ptr<Texture2DObject> heightmap = std::make_shared<Texture2DObject>();
-    float maxHeight = 0;
-    float minHeight = 10000.0f;
 
     std::vector<float> pixels;
     for (unsigned int j = 0; j < height; ++j)
@@ -340,22 +348,45 @@ std::shared_ptr<Texture2DObject> MapApplication::CreateHeightMap(unsigned int wi
 
             float height = (stb_perlin_fbm_noise3(x + coords.x, y + coords.y, 0.0f, 2.0f, .5f, 6) + 1.0f) * .5f;
 
-            if (height > maxHeight)
-                maxHeight = height;
-            if (height < minHeight)
-                minHeight = height;
-
             pixels.push_back(height);
         }
     }
 
-    std::cout << "Min Height: " << minHeight << ", Max Height: " << maxHeight << std::endl;
+    std::vector<float> normals;
+    std::shared_ptr<Texture2DObject> normalMap = std::make_shared<Texture2DObject>();
 
+    for (unsigned int y = 0; y < height; ++y)
+    {
+        for (unsigned int x = 0; x < width; ++x)
+        {
+            int columns = width;
+            
+            float heightL = x == 0 ? pixels[y * columns + x] : pixels[y * columns + x - 1];
+            float heightR = x == width - 1? pixels[y * columns + x] : pixels[y * columns + x + 1];
+            float heightD = y == 0 ? pixels[y * columns + x] : pixels[(y - 1) * columns + x];
+            float heightU = y == height - 1 ? pixels[y * columns + x] : pixels[(y + 1) * columns + x];
+            
+            auto dx = glm::vec3(1, 0, (heightR - heightL) / 2.0);
+            auto dy = glm::vec3(0, 1, (heightU - heightD) / 2.0);
+
+            auto normal = glm::normalize(glm::cross(dy, dx));
+            normals.push_back(normal.x);
+            normals.push_back(normal.y);
+            normals.push_back(normal.z);
+        }
+    }
+
+    normalMap->Bind();
+    normalMap->SetImage<float>(0, width, height, TextureObject::FormatRGB, TextureObject::InternalFormatRGB8, normals);
+    normalMap->GenerateMipmap();
+    m_normalMaps.push_back(normalMap);
+    Texture2DObject::Unbind();
+    
     heightmap->Bind();
     heightmap->SetImage<float>(0, width, height, TextureObject::FormatR, TextureObject::InternalFormatR16F, pixels);
     heightmap->GenerateMipmap();
-
-    return heightmap;
+    m_heightMaps.push_back(heightmap);
+    Texture2DObject::Unbind();
 }
 
 void MapApplication::CreateTerrainMesh(unsigned int gridX, unsigned int gridY)
@@ -370,7 +401,6 @@ void MapApplication::CreateTerrainMesh(unsigned int gridX, unsigned int gridY)
         glm::vec3 position;
         glm::vec3 normal;
         glm::vec2 texCoord;
-        // TODO: Add tangent and bitangent
     };
 
     // Define the vertex format (should match the vertex structure)
@@ -400,6 +430,7 @@ void MapApplication::CreateTerrainMesh(unsigned int gridX, unsigned int gridY)
             // Vertex data for this vertex only
             glm::vec3 position(i * scale.x, 0.0f, j * scale.y);
             glm::vec3 normal(0.0f, 1.0f, 0.0f);
+            
             glm::vec2 texCoord(i, j);
             vertices.emplace_back(position, normal, texCoord);
 
