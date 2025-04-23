@@ -17,8 +17,8 @@ uniform vec2 ColorTextureRange12;
 uniform vec2 ColorTextureRange23;
 uniform vec2 ColorTextureScale;
 
+uniform vec3 LightDirection;
 uniform vec3 CameraPosition;
-
 
 float inverseMix(vec2 range, float value)
 {
@@ -34,24 +34,19 @@ void main()
 	vec4 color3 = texture(ColorTexture3, TexCoord * ColorTextureScale);
 
 	// Mix between them according to height ranges
-	vec4 tex = color0;
-	tex = mix(tex, color1, inverseMix(ColorTextureRange01, Height));
-	tex = mix(tex, color2, inverseMix(ColorTextureRange12, Height));
-	tex = mix(tex, color3, inverseMix(ColorTextureRange23, Height));
-
-	SurfaceData data;
-	data.normal = WorldNormal;
-	data.reflectionColor = Color.rgb * tex.rgb;
-	vec3 arm = vec3(1.0, 1.0, 1.0);
-	data.ambientReflectance = arm.x;
-	data.diffuseReflectance = 1.0;
-	data.specularReflectance = pow(1.0 - arm.y, 4);
-	data.specularExponent = 2.0 / pow(arm.y, 2) - 2.0;
-
-	vec3 position = WorldPosition;
-	vec3 viewDir = GetDirection(position, CameraPosition);
-	vec3 color = ComputeLighting(position, data, viewDir, true);
+	vec4 color = color0;
+	color = mix(color, color1, inverseMix(ColorTextureRange01, Height));
+	color = mix(color, color2, inverseMix(ColorTextureRange12, Height));
+	color = mix(color, color3, inverseMix(ColorTextureRange23, Height));
 	
-	FragColor = vec4(color, 1.0);
+	// We have directional light, just use lightdirection
+	vec3 lightVector = normalize(LightDirection);
+	vec3 viewVector = normalize(CameraPosition - WorldPosition);
+	vec3 halfVector = normalize(lightVector + viewVector);
+	
+	vec3 blinnPhongReflection = 
+		GetBlinnPhongReflection(color * Color, lightVector, normalize(WorldNormal), halfVector);
+
+	FragColor = vec4(blinnPhongReflection, 1);
 	
 }

@@ -31,10 +31,15 @@
 MapApplication::MapApplication()
     : Application(1024, 1024, "Individual Project")
     , m_gridX(128), m_gridY(128)
-    , m_gridWidth(2), m_gridHeight(2)
+    , m_gridWidth(4), m_gridHeight(4)
     , m_vertexShaderLoader(Shader::Type::VertexShader)
     , m_fragmentShaderLoader(Shader::Type::FragmentShader)
     , m_renderer(GetDevice())
+    , m_ambientReflection(1.0f)
+    , m_diffuseReflection(1.0f)
+    , m_specularReflection(1.0f)
+    , m_specularExponent(100.0f)
+    , m_ambientColor(1.0f)
 {
 }
 
@@ -69,7 +74,7 @@ void MapApplication::InitializeLights()
     // Create a directional light and add it to the scene
     std::shared_ptr<DirectionalLight> directionalLight = std::make_shared<DirectionalLight>();
     directionalLight->SetDirection(glm::vec3(-0.3f, -1.0f, -0.3f)); // It will be normalized inside the function
-    directionalLight->SetIntensity(3.0f);
+    directionalLight->SetIntensity(1.0f);
     m_scene.AddSceneNode(std::make_shared<SceneLight>("directional light", directionalLight));
 }
 
@@ -82,6 +87,14 @@ void MapApplication::Update()
     m_cameraController.Update(GetMainWindow(), GetDeltaTime());
 
     m_waterMaterial->SetUniformValue("Time", GetCurrentTime());
+
+    for (std::shared_ptr<Material> material : m_terrainMaterials)
+    {
+        material->SetUniformValue("AmbientReflection", m_ambientReflection);
+        material->SetUniformValue("DiffuseReflection", m_diffuseReflection);
+        material->SetUniformValue("SpecularReflection", m_specularReflection);
+        material->SetUniformValue("AmbientColor", m_ambientColor);
+    }
 
     // Add the scene nodes to the renderer
     RendererSceneVisitor rendererSceneVisitor(m_renderer);
@@ -111,6 +124,15 @@ void MapApplication::RenderGui()
     
     // Draw GUI for camera controller
     m_cameraController.DrawGUI(m_imGui);
+
+    if (auto window = m_imGui.UseWindow("Light controls"))
+    {
+        ImGui::SliderFloat("Ambient Reflection", &m_ambientReflection, 0.0f, 5.0f);
+        ImGui::ColorEdit3("AmbientColor", &m_ambientColor[0]);
+        ImGui::SliderFloat("Diffuse Reflection", &m_diffuseReflection, 0.0f, 5.0f);
+        ImGui::SliderFloat("Specular Reflection", &m_specularReflection, 0.0f, 5.0f);
+        ImGui::SliderFloat("Specular Exponent", &m_specularExponent, 50.0f, 200.0f);
+    }
 
     m_imGui.EndFrame();
 }
@@ -145,9 +167,7 @@ void MapApplication::InitializeMaterials()
     // terrain material
     std::vector<const char*> fragmentShaderPaths;
     fragmentShaderPaths.push_back("shaders/version330.glsl");
-    fragmentShaderPaths.push_back("shaders/utils.glsl");
     fragmentShaderPaths.push_back("shaders/blinn-phong.glsl");
-    fragmentShaderPaths.push_back("shaders/lighting.glsl");
     fragmentShaderPaths.push_back("shaders/terrain.frag");
     Shader terrainVS = m_vertexShaderLoader.Load("shaders/terrain.vert");
     Shader terrainFS = m_fragmentShaderLoader.Load(fragmentShaderPaths);
@@ -251,16 +271,14 @@ void MapApplication::InitializeModels()
     {
         auto terrainModelPointer = std::make_shared<Model>(m_terrainPatch);
         std::shared_ptr<Transform> terrainTransform = std::make_shared<Transform>();
-        terrainTransform->SetScale(glm::vec3(10.0f));
-        terrainTransform->SetTranslation(glm::vec3(10.0f) * (gridPositionTranslations[i] + pushDownTranslate));
+        terrainTransform->SetTranslation(gridPositionTranslations[i] + pushDownTranslate);
         terrainModelPointer->AddMaterial(m_terrainMaterials[i]);
         const std::string& terrainChunkName = std::format("Terrain chunk {}", i);
         auto terrainChunkNode = std::make_shared<SceneModel>(terrainChunkName, terrainModelPointer, terrainTransform);
         m_scene.AddSceneNode(terrainChunkNode);
         
         auto waterTransform = std::make_shared<Transform>();
-        waterTransform->SetScale(glm::vec3(10.0f));
-        waterTransform->SetTranslation(glm::vec3(10.0f) * (gridPositionTranslations[i] + waterLevel));
+        waterTransform->SetTranslation(gridPositionTranslations[i] + waterLevel);
         const std::string& waterChunkName = std::format("Water chunk {}", i);
         m_scene.AddSceneNode(
             std::make_shared<SceneModel>(

@@ -45,9 +45,10 @@ private:
     void CreateTerrainMesh(unsigned int gridX, unsigned int gridY);
 
 private:
-    const int TERRAIN_MESH_COUNT = 4;
-
     unsigned int m_gridX, m_gridY, m_gridWidth, m_gridHeight;
+
+    float m_ambientReflection, m_diffuseReflection, m_specularReflection, m_specularExponent;
+    glm::vec3 m_ambientColor;
 
     ShaderLoader m_vertexShaderLoader;
     ShaderLoader m_fragmentShaderLoader;

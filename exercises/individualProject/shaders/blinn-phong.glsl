@@ -1,52 +1,31 @@
-
 uniform vec3 AmbientColor;
+uniform float AmbientReflection;
 
-struct SurfaceData
-{
-	vec3 normal;
-	vec3 reflectionColor;
-	float ambientReflectance;
-	float diffuseReflectance;
-	float specularReflectance;
-	float specularExponent;
-};
+uniform vec3 LightColor;
+uniform float DiffuseReflection;
 
-vec3 ComputeDiffuseIndirectLighting(SurfaceData data)
+uniform float SpecularReflection;
+uniform float SpecularExponent;
+
+vec3 GetAmbientReflection(vec4 color)
 {
-	return data.ambientReflectance * data.reflectionColor * AmbientColor;
+	// R_ambient = I_a * K_a * color
+	return AmbientColor * AmbientReflection * color.rgb;
 }
 
-vec3 ComputeSpecularIndirectLighting(SurfaceData data, vec3 viewDir)
+vec3 GetDiffuseReflection(vec4 color, vec3 lightVector, vec3 worldNormal)
 {
-	return vec3(0);
+	return LightColor * DiffuseReflection * color.rgb * clamp(dot(worldNormal, lightVector), 0, 1);
 }
 
-vec3 CombineIndirectLighting(vec3 diffuse, vec3 specular, SurfaceData data, vec3 viewDir)
+vec3 GetSpecularReflection(vec3 worldNormal, vec3 halfVector)
 {
-	return diffuse + specular;
+	return LightColor * SpecularReflection * pow(clamp(dot(worldNormal, halfVector), 0, 1), SpecularExponent);
 }
 
-vec3 ComputeDiffuseLighting(SurfaceData data, vec3 lightDir)
+vec3 GetBlinnPhongReflection(vec4 color, vec3 lightVector, vec3 worldNormal, vec3 halfVector)
 {
-	float diffuseIntensity = ClampedDot(data.normal, lightDir);
-	return diffuseIntensity * data.diffuseReflectance * data.reflectionColor;
-}
-
-vec3 ComputeSpecularLighting(SurfaceData data, vec3 lightDir, vec3 viewDir)
-{
-   vec3 halfDir = GetHalfVector(lightDir, viewDir);
-   float specularIntensity = ClampedDot(halfDir, data.normal);
-   
-   // Alternative version: Same result, with different specularExponent values
-   //vec3 reflectDir = reflect(lightDir, data.normal);
-   //float specularIntensity = ClampedDot(reflectDir, viewDir);
-
-   specularIntensity = pow(specularIntensity, data.specularExponent);
-
-   return vec3(specularIntensity * data.specularReflectance);
-}
-
-vec3 CombineLighting(vec3 diffuse, vec3 specular, SurfaceData data, vec3 lightDir, vec3 viewDir)
-{
-	return diffuse + specular;
+	return GetAmbientReflection(color)
+		+ GetDiffuseReflection(color, lightVector, worldNormal) 
+		+ GetSpecularReflection(worldNormal, halfVector);
 }
