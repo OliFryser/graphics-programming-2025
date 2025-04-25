@@ -91,6 +91,9 @@ private:
     Renderer m_renderer;
     Scene m_scene;
 
+    // Needed for transparent water
+    Scene m_waterScene;
+
     DearImGui m_imGui;
 
     // Camera controller

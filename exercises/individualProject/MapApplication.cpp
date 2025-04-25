@@ -37,7 +37,7 @@ MapApplication::MapApplication()
     , m_renderer(GetDevice())
     , m_ambientColor(.25f)
     , m_heightScale(1.0f)
-    , m_quantizeStep(1.0f)
+    , m_quantizeStep(.1f)
     , m_smoothingAmount(1.0f)
     , m_waterLevel(-.15f)
 {
@@ -76,7 +76,8 @@ void MapApplication::InitializeLights()
     std::shared_ptr<DirectionalLight> directionalLight = std::make_shared<DirectionalLight>();
     directionalLight->SetDirection(glm::vec3(-0.3f, -1.0f, -0.3f)); // It will be normalized inside the function
     directionalLight->SetIntensity(1.0f);
-    m_scene.AddSceneNode(std::make_shared<SceneLight>("directional light", directionalLight));
+    auto sceneLight = std::make_shared<SceneLight>("directional light", directionalLight);
+    m_scene.AddSceneNode(sceneLight);
 }
 
 void MapApplication::Update()
@@ -95,7 +96,7 @@ void MapApplication::Update()
 
     for (int i = 0; i < m_gridWidth * m_gridHeight; i++)
     {
-        auto waterChunk = m_scene.GetSceneNode(std::format("Water chunk {}", i));
+        auto waterChunk = m_waterScene.GetSceneNode(std::format("Water chunk {}", i));
         auto currentTranslation = waterChunk->GetTransform()->GetTranslation();
         waterChunk->GetTransform()->SetTranslation(glm::vec3(currentTranslation.x, m_waterLevel, currentTranslation.z));
     }
@@ -103,6 +104,7 @@ void MapApplication::Update()
     // Add the scene nodes to the renderer
     RendererSceneVisitor rendererSceneVisitor(m_renderer);
     m_scene.AcceptVisitor(rendererSceneVisitor);
+    m_waterScene.AcceptVisitor(rendererSceneVisitor);
 }
 
 void MapApplication::Render()
@@ -130,8 +132,8 @@ void MapApplication::RenderGui()
     if (auto window = m_imGui.UseWindow("Terrain Options"))
     {
         ImGui::DragFloat("Height Scale", &m_heightScale, .05f);
-        ImGui::DragFloat("Quantize Step", &m_quantizeStep);
-        ImGui::DragFloat("Smoothing Amount", &m_smoothingAmount);
+        ImGui::DragFloat("Quantize Step", &m_quantizeStep, .05f);
+        ImGui::DragFloat("Smoothing Amount", &m_smoothingAmount, .05f);
 
         ImGui::DragFloat("Water Level", &m_waterLevel, .05f);
         
@@ -140,6 +142,7 @@ void MapApplication::RenderGui()
     // Draw GUI for scene nodes, using the visitor pattern
     ImGuiSceneVisitor imGuiVisitor(m_imGui, "Scene");
     m_scene.AcceptVisitor(imGuiVisitor);
+    m_waterScene.AcceptVisitor(imGuiVisitor);
     
     // Draw GUI for camera controller
     m_cameraController.DrawGUI(m_imGui);
@@ -314,15 +317,12 @@ void MapApplication::InitializeModels()
         const std::string& terrainChunkName = std::format("Terrain chunk {}", i);
         auto terrainChunkNode = std::make_shared<SceneModel>(terrainChunkName, terrainModelPointer, terrainTransform);
         m_scene.AddSceneNode(terrainChunkNode);
-    }
 
-    for (int i = 0; i < m_gridWidth * m_gridHeight; i++)
-    {
         auto waterTransform = std::make_shared<Transform>();
         waterTransform->SetScale(glm::vec3(10.0f));
         waterTransform->SetTranslation(glm::vec3(10.0f) * (gridPositionTranslations[i]));
         const std::string& waterChunkName = std::format("Water chunk {}", i);
-        m_scene.AddSceneNode(
+        m_waterScene.AddSceneNode(
             std::make_shared<SceneModel>(
                 waterChunkName, waterModelPointer, waterTransform));
     }
