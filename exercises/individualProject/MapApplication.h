@@ -39,6 +39,41 @@ private:
 
     void RenderGui();
 
+    template <typename T>
+    void UpdateMaterialsUniform(const char* uniformName, T value)
+    {
+        MapApplication::UpdateTerrainMaterialsUniform(uniformName, value);
+        MapApplication::UpdateWaterMaterialUniform(uniformName, value);
+    }
+
+    template <typename T>
+    void UpdateTerrainMaterialsUniform(const char* uniformName, T value)
+    {
+        for (std::shared_ptr<Material> terrainUniform : m_terrainMaterials)
+        {
+            ShaderProgram::Location location = terrainUniform->GetUniformLocation(uniformName);
+            if (location >= 0)
+                terrainUniform->SetUniformValue(location, value);
+        }
+        ShaderProgram::Location location = m_waterMaterial->GetUniformLocation(uniformName);
+        if (location >= 0)
+            m_waterMaterial->SetUniformValue(location, value);
+    }
+
+    template <typename T>
+    void UpdateWaterMaterialUniform(const char* uniformName, T value)
+    {
+        for (std::shared_ptr<Material> terrainUniform : m_terrainMaterials)
+        {
+            ShaderProgram::Location location = terrainUniform->GetUniformLocation(uniformName);
+            if (location >= 0)
+                terrainUniform->SetUniformValue(location, value);
+        }
+        ShaderProgram::Location location = m_waterMaterial->GetUniformLocation(uniformName);
+        if (location >= 0)
+            m_waterMaterial->SetUniformValue(location, value);
+    }
+
     void CreateHeightMap(unsigned int width, unsigned int height, glm::ivec2 coords);
     std::shared_ptr<Texture2DObject> CreateDefaultTexture();
     std::shared_ptr<Texture2DObject> LoadTexture(const char* path);
@@ -62,6 +97,9 @@ private:
     CameraController m_cameraController;
 
     glm::vec3 m_ambientColor;
+
+    float m_heightScale, m_smoothingAmount, m_quantizeStep;
+    float m_waterLevel;
 
     std::shared_ptr<Mesh> m_terrainPatch;
     std::vector<std::shared_ptr<Material>> m_terrainMaterials;

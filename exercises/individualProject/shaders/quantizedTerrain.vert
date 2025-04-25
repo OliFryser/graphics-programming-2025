@@ -18,11 +18,11 @@ uniform mat4 ViewProjMatrix;
 uniform int TerrainWidth;
 uniform float SmoothingAmount;
 uniform float QuantizeStep;
-uniform float HeightStep;
+uniform float HeightScale;
 
 void main()
 {
-	vec4 height = texture(Heightmap, (VertexPosition.xz * (TerrainWidth - 1) + 0.5) / TerrainWidth);
+	vec4 height = texture(Heightmap, (VertexPosition.xz * (TerrainWidth - 1) + 0.5) / TerrainWidth) * HeightScale;
 	vec4 normal = texture(NormalMap, (VertexPosition.xz * 127 + 0.5)/128);
 	//vec4 normal = texture(NormalMap, VertexPosition.xz);
 

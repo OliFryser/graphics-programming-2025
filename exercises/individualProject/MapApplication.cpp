@@ -23,12 +23,8 @@
 #define STB_PERLIN_IMPLEMENTATION
 #include <stb_perlin.h>
 
-//#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#include <cmath>
-#include <iostream>
-#include <numbers>  // for PI constant
 #include <imgui.h>
 #include <format>
 
@@ -39,6 +35,11 @@ MapApplication::MapApplication()
     , m_vertexShaderLoader(Shader::Type::VertexShader)
     , m_fragmentShaderLoader(Shader::Type::FragmentShader)
     , m_renderer(GetDevice())
+    , m_ambientColor(.25f)
+    , m_heightScale(1.0f)
+    , m_quantizeStep(1.0f)
+    , m_smoothingAmount(1.0f)
+    , m_waterLevel(-.15f)
 {
 }
 
@@ -64,7 +65,7 @@ void MapApplication::Initialize()
     
     //Enable depth test
     GetDevice().EnableFeature(GL_DEPTH_TEST);
-    GetDevice().EnableFeature(GL_BLEND);
+
     //Enable wireframe
     //GetDevice().SetWireframeEnabled(true);
 }
@@ -87,6 +88,17 @@ void MapApplication::Update()
     m_cameraController.Update(GetMainWindow(), GetDeltaTime());
 
     m_waterMaterial->SetUniformValue("Time", GetCurrentTime());
+    UpdateMaterialsUniform("AmbientColor", m_ambientColor);
+    UpdateTerrainMaterialsUniform("HeightScale", m_heightScale);
+    UpdateTerrainMaterialsUniform("QuantizeStep", m_quantizeStep);
+    UpdateTerrainMaterialsUniform("SmoothingAmount", m_smoothingAmount);
+
+    for (int i = 0; i < m_gridWidth * m_gridHeight; i++)
+    {
+        auto waterChunk = m_scene.GetSceneNode(std::format("Water chunk {}", i));
+        auto currentTranslation = waterChunk->GetTransform()->GetTranslation();
+        waterChunk->GetTransform()->SetTranslation(glm::vec3(currentTranslation.x, m_waterLevel, currentTranslation.z));
+    }
 
     // Add the scene nodes to the renderer
     RendererSceneVisitor rendererSceneVisitor(m_renderer);
@@ -110,6 +122,21 @@ void MapApplication::RenderGui()
 {
     m_imGui.BeginFrame();
     
+    if (auto window = m_imGui.UseWindow("Lighting Controls"))
+    {
+        ImGui::ColorEdit3("Ambient Color", &m_ambientColor[0]);
+    }
+
+    if (auto window = m_imGui.UseWindow("Terrain Options"))
+    {
+        ImGui::DragFloat("Height Scale", &m_heightScale, .05f);
+        ImGui::DragFloat("Quantize Step", &m_quantizeStep);
+        ImGui::DragFloat("Smoothing Amount", &m_smoothingAmount);
+
+        ImGui::DragFloat("Water Level", &m_waterLevel, .05f);
+        
+    }
+
     // Draw GUI for scene nodes, using the visitor pattern
     ImGuiSceneVisitor imGuiVisitor(m_imGui, "Scene");
     m_scene.AcceptVisitor(imGuiVisitor);
@@ -136,7 +163,7 @@ void MapApplication::InitializeTextures()
         }
     }
 
-    m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("models/skybox/BlueSkyCubeMap.png", TextureObject::FormatRGB, TextureObject::InternalFormatSRGB8);
+    m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("models/skybox/BlueSkyCubeMapLQ.png", TextureObject::FormatRGB, TextureObject::InternalFormatSRGB8);
 
     m_dirtTexture = LoadTexture("textures/dirt.png");
     m_grassTexture = LoadTexture("textures/grass.jpg");
@@ -272,7 +299,6 @@ void MapApplication::InitializeModels()
     }
 
     glm::vec3 pushDownTranslate = glm::vec3(0.0f, -.5f, 0.0f);
-    glm::vec3 waterLevel = glm::vec3(0.0f, -0.15f, 0.0f);
     auto terrainPatchPtr = std::make_shared<Mesh>();
 
     auto waterModelPointer = std::make_shared<Model>(m_terrainPatch);
@@ -294,7 +320,7 @@ void MapApplication::InitializeModels()
     {
         auto waterTransform = std::make_shared<Transform>();
         waterTransform->SetScale(glm::vec3(10.0f));
-        waterTransform->SetTranslation(glm::vec3(10.0f) * (gridPositionTranslations[i] + waterLevel));
+        waterTransform->SetTranslation(glm::vec3(10.0f) * (gridPositionTranslations[i]));
         const std::string& waterChunkName = std::format("Water chunk {}", i);
         m_scene.AddSceneNode(
             std::make_shared<SceneModel>(
