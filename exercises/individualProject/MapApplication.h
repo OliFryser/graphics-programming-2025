@@ -15,6 +15,7 @@
 #include <vector>
 
 class Texture2DObject;
+class TextureCubemapObject;
 
 class MapApplication : public Application
 {
@@ -60,6 +61,8 @@ private:
     // Camera controller
     CameraController m_cameraController;
 
+    glm::vec3 m_ambientColor;
+
     std::shared_ptr<Mesh> m_terrainPatch;
     std::vector<std::shared_ptr<Material>> m_terrainMaterials;
     std::shared_ptr<Material> m_waterMaterial;
@@ -73,4 +76,6 @@ private:
 
     std::vector<std::shared_ptr<Texture2DObject>> m_heightMaps;
     std::vector<std::shared_ptr<Texture2DObject>> m_normalMaps;
+
+    std::shared_ptr<TextureCubemapObject> m_skyboxTexture;
 };

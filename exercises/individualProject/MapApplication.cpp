@@ -1,17 +1,21 @@
 #include "MapApplication.h"
 
-#include <ituGL/geometry/VertexFormat.h>
+#include <ituGL/asset/TextureCubemapLoader.h>
 #include <ituGL/texture/Texture2DObject.h>
+
 #include <ituGL/renderer/ForwardRenderPass.h>
+#include <ituGL/renderer/SkyboxRenderPass.h>
 
 #include <ituGL/scene/Transform.h>
-#include <ituGL/scene/RendererSceneVisitor.h>
-#include <ituGL/scene/ImGuiSceneVisitor.h>
 #include <ituGL/scene/SceneCamera.h>
 #include <ituGL/scene/SceneModel.h>
 #include <ituGL/scene/SceneLight.h>
+#include <ituGL/scene/RendererSceneVisitor.h>
+#include <ituGL/scene/ImGuiSceneVisitor.h>
 
 #include <ituGL/lighting/DirectionalLight.h>
+
+#include <ituGL/geometry/VertexFormat.h>
 #include <ituGL/geometry/Model.h>
 
 #include <glm/gtx/transform.hpp>  // for matrix transformations
@@ -19,7 +23,7 @@
 #define STB_PERLIN_IMPLEMENTATION
 #include <stb_perlin.h>
 
-#define STB_IMAGE_IMPLEMENTATION
+//#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 #include <cmath>
@@ -132,17 +136,21 @@ void MapApplication::InitializeTextures()
         }
     }
 
+    m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("models/skybox/BlueSkyCubeMap.png", TextureObject::FormatRGB, TextureObject::InternalFormatSRGB8);
+
     m_dirtTexture = LoadTexture("textures/dirt.png");
     m_grassTexture = LoadTexture("textures/grass.jpg");
     m_rockTexture = LoadTexture("textures/rock.jpg");
     m_snowTexture = LoadTexture("textures/snow.jpg");
     m_waterTexture = LoadTexture("textures/water.png");
-    //m_waterTexture->SetParameter(TextureObject::ParameterEnum::WrapS, GL_CLAMP_TO_EDGE);
-    //m_waterTexture->SetParameter(TextureObject::ParameterEnum::WrapT, GL_CLAMP_TO_EDGE);
 }
 
 void MapApplication::InitializeMaterials()
 {
+    m_skyboxTexture->Bind();
+    float maxLod;
+    m_skyboxTexture->GetParameter(TextureObject::ParameterFloat::MaxLod, maxLod);
+    TextureCubemapObject::Unbind();
     {
         // terrain material
         std::vector<const char*> fragmentShaderPaths;
@@ -185,6 +193,11 @@ void MapApplication::InitializeMaterials()
         m_terrainMaterials[0]->SetUniformValue("Color", glm::vec4(1.0f));
         m_terrainMaterials[0]->SetUniformValue("TerrainWidth", static_cast<int>(m_gridX));
 
+        m_terrainMaterials[0]->SetUniformValue("AmbientColor", glm::vec3(0.25f));
+
+        m_terrainMaterials[0]->SetUniformValue("EnvironmentTexture", m_skyboxTexture);
+        m_terrainMaterials[0]->SetUniformValue("EnvironmentMaxLod", maxLod);
+
 
         for (int i = 1; i < m_gridWidth * m_gridHeight; i++)
         {
@@ -226,6 +239,12 @@ void MapApplication::InitializeMaterials()
         );
 
         m_waterMaterial = std::make_shared<Material>(waterShaderProgram);
+
+        m_terrainMaterials[0]->SetUniformValue("AmbientColor", glm::vec3(0.25f));
+
+        m_terrainMaterials[0]->SetUniformValue("EnvironmentTexture", m_skyboxTexture);
+        m_terrainMaterials[0]->SetUniformValue("EnvironmentMaxLod", maxLod);
+        
         m_waterMaterial->SetUniformValue("TerrainWidth", static_cast<int>(m_gridX));
         m_waterMaterial->SetUniformValue("ColorTexture", m_waterTexture);
         m_waterMaterial->SetUniformValue("ColorTextureScale", glm::vec2(0.05f));
@@ -286,6 +305,7 @@ void MapApplication::InitializeModels()
 void MapApplication::InitializeRenderer()
 {
     m_renderer.AddRenderPass(std::make_unique<ForwardRenderPass>());
+    m_renderer.AddRenderPass(std::make_unique<SkyboxRenderPass>(m_skyboxTexture));
 }
 
 void MapApplication::InitializeCamera()
