@@ -40,7 +40,7 @@ void main()
 	tex = mix(tex, color3, inverseMix(ColorTextureRange23, Height));
 
 	SurfaceData data;
-	data.normal = WorldNormal;
+	data.normal = normalize(WorldNormal);
 	data.reflectionColor = Color.rgb * tex.rgb;
 	vec3 arm = vec3(1.0, 1.0, 1.0);
 	data.ambientReflectance = arm.x;

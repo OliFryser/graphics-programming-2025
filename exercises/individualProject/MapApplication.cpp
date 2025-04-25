@@ -60,6 +60,7 @@ void MapApplication::Initialize()
     
     //Enable depth test
     GetDevice().EnableFeature(GL_DEPTH_TEST);
+    GetDevice().EnableFeature(GL_BLEND);
     //Enable wireframe
     //GetDevice().SetWireframeEnabled(true);
 }
@@ -69,7 +70,7 @@ void MapApplication::InitializeLights()
     // Create a directional light and add it to the scene
     std::shared_ptr<DirectionalLight> directionalLight = std::make_shared<DirectionalLight>();
     directionalLight->SetDirection(glm::vec3(-0.3f, -1.0f, -0.3f)); // It will be normalized inside the function
-    directionalLight->SetIntensity(3.0f);
+    directionalLight->SetIntensity(1.0f);
     m_scene.AddSceneNode(std::make_shared<SceneLight>("directional light", directionalLight));
 }
 
@@ -142,85 +143,94 @@ void MapApplication::InitializeTextures()
 
 void MapApplication::InitializeMaterials()
 {
-    // terrain material
-    std::vector<const char*> fragmentShaderPaths;
-    fragmentShaderPaths.push_back("shaders/version330.glsl");
-    fragmentShaderPaths.push_back("shaders/utils.glsl");
-    fragmentShaderPaths.push_back("shaders/blinn-phong.glsl");
-    fragmentShaderPaths.push_back("shaders/lighting.glsl");
-    fragmentShaderPaths.push_back("shaders/terrain.frag");
-    Shader terrainVS = m_vertexShaderLoader.Load("shaders/terrain.vert");
-    Shader terrainFS = m_fragmentShaderLoader.Load(fragmentShaderPaths);
-    std::shared_ptr<ShaderProgram> terrainShaderProgram = std::make_shared<ShaderProgram>();
-    terrainShaderProgram->Build(terrainVS, terrainFS);
-
-    ShaderProgram::Location viewProjMatrixLocation = terrainShaderProgram->GetUniformLocation("ViewProjMatrix");
-    ShaderProgram::Location cameraPositionLocation = terrainShaderProgram->GetUniformLocation("CameraPosition");
-    ShaderProgram::Location locationWorldMatrix = terrainShaderProgram->GetUniformLocation("WorldMatrix");
-    // Register shader with renderer
-    m_renderer.RegisterShaderProgram(terrainShaderProgram,
-        [=](const ShaderProgram& shaderProgram, const glm::mat4& worldMatrix, const Camera& camera, bool cameraChanged)
-        {
-            if (cameraChanged)
-            {
-                shaderProgram.SetUniform(cameraPositionLocation, camera.ExtractTranslation());
-                shaderProgram.SetUniform(viewProjMatrixLocation, camera.GetViewProjectionMatrix());
-            }
-            shaderProgram.SetUniform(locationWorldMatrix, worldMatrix);
-        },
-        m_renderer.GetDefaultUpdateLightsFunction(*terrainShaderProgram)
-    );
-
-    m_terrainMaterials.push_back(std::make_shared<Material>(terrainShaderProgram));
-    m_terrainMaterials[0]->SetUniformValue("ColorTexture0", m_dirtTexture);
-    m_terrainMaterials[0]->SetUniformValue("ColorTexture1", m_grassTexture);
-    m_terrainMaterials[0]->SetUniformValue("ColorTexture2", m_rockTexture);
-    m_terrainMaterials[0]->SetUniformValue("ColorTexture3", m_snowTexture);
-    m_terrainMaterials[0]->SetUniformValue("ColorTextureRange01", glm::vec2(.3f, .5f));
-    m_terrainMaterials[0]->SetUniformValue("ColorTextureRange12", glm::vec2(.5f, .7f));
-    m_terrainMaterials[0]->SetUniformValue("ColorTextureRange23", glm::vec2(.7f, .8f));
-    m_terrainMaterials[0]->SetUniformValue("ColorTextureScale", glm::vec2(0.05f));
-    m_terrainMaterials[0]->SetUniformValue("Color", glm::vec4(1.0f));
-
-
-    for (int i = 1; i < m_gridWidth * m_gridHeight; i++)
     {
-        std::shared_ptr<Material> material = std::make_shared<Material>(*m_terrainMaterials[0]);
-        m_terrainMaterials.push_back(material);
-        m_terrainMaterials[i]->SetUniformValue("Heightmap", m_heightMaps[i]);
-        m_terrainMaterials[i]->SetUniformValue("NormalMap", m_normalMaps[i]);
-    }
+        // terrain material
+        std::vector<const char*> fragmentShaderPaths;
+        fragmentShaderPaths.push_back("shaders/version330.glsl");
+        fragmentShaderPaths.push_back("shaders/utils.glsl");
+        fragmentShaderPaths.push_back("shaders/blinn-phong.glsl");
+        fragmentShaderPaths.push_back("shaders/lighting.glsl");
+        fragmentShaderPaths.push_back("shaders/terrain.frag");
+        Shader terrainVS = m_vertexShaderLoader.Load("shaders/terrain.vert");
+        Shader terrainFS = m_fragmentShaderLoader.Load(fragmentShaderPaths);
+        std::shared_ptr<ShaderProgram> terrainShaderProgram = std::make_shared<ShaderProgram>();
+        terrainShaderProgram->Build(terrainVS, terrainFS);
 
-    m_terrainMaterials[0]->SetUniformValue("Heightmap", m_heightMaps[0]);
-    m_terrainMaterials[0]->SetUniformValue("NormalMap", m_normalMaps[0]);
-
-    // water material
-    Shader waterVS = m_vertexShaderLoader.Load("shaders/water.vert");
-    Shader waterFS = m_fragmentShaderLoader.Load("shaders/water.frag");
-    std::shared_ptr<ShaderProgram> waterShaderProgram = std::make_shared<ShaderProgram>();
-    waterShaderProgram->Build(waterVS, waterFS);
-
-    ShaderProgram::Location waterViewProjMatrixLocation = waterShaderProgram->GetUniformLocation("ViewProjMatrix");
-    ShaderProgram::Location waterLocationWorldMatrix = waterShaderProgram->GetUniformLocation("WorldMatrix");
-    // Register shader with renderer
-    m_renderer.RegisterShaderProgram(waterShaderProgram,
-        [=](const ShaderProgram& shaderProgram, const glm::mat4& worldMatrix, const Camera& camera, bool cameraChanged)
-        {
-            if (cameraChanged)
+        ShaderProgram::Location viewProjMatrixLocation = terrainShaderProgram->GetUniformLocation("ViewProjMatrix");
+        ShaderProgram::Location cameraPositionLocation = terrainShaderProgram->GetUniformLocation("CameraPosition");
+        ShaderProgram::Location locationWorldMatrix = terrainShaderProgram->GetUniformLocation("WorldMatrix");
+        // Register shader with renderer
+        m_renderer.RegisterShaderProgram(terrainShaderProgram,
+            [=](const ShaderProgram& shaderProgram, const glm::mat4& worldMatrix, const Camera& camera, bool cameraChanged)
             {
-                shaderProgram.SetUniform(waterViewProjMatrixLocation, camera.GetViewProjectionMatrix());
-            }
-            shaderProgram.SetUniform(waterLocationWorldMatrix, worldMatrix);
-        },
-        m_renderer.GetDefaultUpdateLightsFunction(*waterShaderProgram)
-    );
+                if (cameraChanged)
+                {
+                    shaderProgram.SetUniform(cameraPositionLocation, camera.ExtractTranslation());
+                    shaderProgram.SetUniform(viewProjMatrixLocation, camera.GetViewProjectionMatrix());
+                }
+                shaderProgram.SetUniform(locationWorldMatrix, worldMatrix);
+            },
+            m_renderer.GetDefaultUpdateLightsFunction(*terrainShaderProgram)
+        );
 
-    m_waterMaterial = std::make_shared<Material>(waterShaderProgram);
-    m_waterMaterial->SetUniformValue("ColorTexture", m_waterTexture);
-    m_waterMaterial->SetUniformValue("ColorTextureScale", glm::vec2(0.05f));
-    m_waterMaterial->SetUniformValue("Color", glm::vec4(1.0f, 1.0f, 1.0f, .5f));
-    m_waterMaterial->SetBlendEquation(Material::BlendEquation::Add);
-    m_waterMaterial->SetBlendParams(Material::BlendParam::SourceAlpha, Material::BlendParam::OneMinusSourceAlpha);
+        m_terrainMaterials.push_back(std::make_shared<Material>(terrainShaderProgram));
+        m_terrainMaterials[0]->SetUniformValue("ColorTexture0", m_dirtTexture);
+        m_terrainMaterials[0]->SetUniformValue("ColorTexture1", m_grassTexture);
+        m_terrainMaterials[0]->SetUniformValue("ColorTexture2", m_rockTexture);
+        m_terrainMaterials[0]->SetUniformValue("ColorTexture3", m_snowTexture);
+        m_terrainMaterials[0]->SetUniformValue("ColorTextureRange01", glm::vec2(.3f, .5f));
+        m_terrainMaterials[0]->SetUniformValue("ColorTextureRange12", glm::vec2(.5f, .7f));
+        m_terrainMaterials[0]->SetUniformValue("ColorTextureRange23", glm::vec2(.7f, .8f));
+        m_terrainMaterials[0]->SetUniformValue("ColorTextureScale", glm::vec2(0.05f));
+        m_terrainMaterials[0]->SetUniformValue("Color", glm::vec4(1.0f));
+
+
+        for (int i = 1; i < m_gridWidth * m_gridHeight; i++)
+        {
+            std::shared_ptr<Material> material = std::make_shared<Material>(*m_terrainMaterials[0]);
+            m_terrainMaterials.push_back(material);
+            m_terrainMaterials[i]->SetUniformValue("Heightmap", m_heightMaps[i]);
+            m_terrainMaterials[i]->SetUniformValue("NormalMap", m_normalMaps[i]);
+        }
+
+        m_terrainMaterials[0]->SetUniformValue("Heightmap", m_heightMaps[0]);
+        m_terrainMaterials[0]->SetUniformValue("NormalMap", m_normalMaps[0]);
+    }
+    {
+        // water material
+        std::vector<const char*> waterFragmentShaderPaths;
+        waterFragmentShaderPaths.push_back("shaders/version330.glsl");
+        waterFragmentShaderPaths.push_back("shaders/utils.glsl");
+        waterFragmentShaderPaths.push_back("shaders/blinn-phong.glsl");
+        waterFragmentShaderPaths.push_back("shaders/lighting.glsl");
+        waterFragmentShaderPaths.push_back("shaders/water.frag");
+        Shader waterVS = m_vertexShaderLoader.Load("shaders/water.vert");
+        Shader waterFS = m_fragmentShaderLoader.Load(waterFragmentShaderPaths);
+        std::shared_ptr<ShaderProgram> waterShaderProgram = std::make_shared<ShaderProgram>();
+        waterShaderProgram->Build(waterVS, waterFS);
+
+        ShaderProgram::Location waterViewProjMatrixLocation = waterShaderProgram->GetUniformLocation("ViewProjMatrix");
+        ShaderProgram::Location waterLocationWorldMatrix = waterShaderProgram->GetUniformLocation("WorldMatrix");
+        // Register shader with renderer
+        m_renderer.RegisterShaderProgram(waterShaderProgram,
+            [=](const ShaderProgram& shaderProgram, const glm::mat4& worldMatrix, const Camera& camera, bool cameraChanged)
+            {
+                if (cameraChanged)
+                {
+                    shaderProgram.SetUniform(waterViewProjMatrixLocation, camera.GetViewProjectionMatrix());
+                }
+                shaderProgram.SetUniform(waterLocationWorldMatrix, worldMatrix);
+            },
+            m_renderer.GetDefaultUpdateLightsFunction(*waterShaderProgram)
+        );
+
+        m_waterMaterial = std::make_shared<Material>(waterShaderProgram);
+        m_waterMaterial->SetUniformValue("ColorTexture", m_waterTexture);
+        m_waterMaterial->SetUniformValue("ColorTextureScale", glm::vec2(0.05f));
+        m_waterMaterial->SetUniformValue("Color", glm::vec4(1.0f, 1.0f, 1.0f, .6f));
+        m_waterMaterial->SetBlendParams(Material::BlendParam::SourceAlpha, Material::BlendParam::OneMinusSourceAlpha);
+        m_waterMaterial->SetBlendEquation(Material::BlendEquation::Add);
+    }
 }
 
 void MapApplication::InitializeMeshes()
@@ -257,7 +267,10 @@ void MapApplication::InitializeModels()
         const std::string& terrainChunkName = std::format("Terrain chunk {}", i);
         auto terrainChunkNode = std::make_shared<SceneModel>(terrainChunkName, terrainModelPointer, terrainTransform);
         m_scene.AddSceneNode(terrainChunkNode);
-        
+    }
+
+    for (int i = 0; i < m_gridWidth * m_gridHeight; i++)
+    {
         auto waterTransform = std::make_shared<Transform>();
         waterTransform->SetScale(glm::vec3(10.0f));
         waterTransform->SetTranslation(glm::vec3(10.0f) * (gridPositionTranslations[i] + waterLevel));

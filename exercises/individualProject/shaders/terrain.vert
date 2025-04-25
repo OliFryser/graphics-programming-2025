@@ -21,7 +21,8 @@ void main()
 	vec4 normal = texture(NormalMap, (VertexPosition.xz * 127 + 0.5)/128);
 
 	WorldPosition = (WorldMatrix * vec4(VertexPosition.x, height.x, VertexPosition.z, 1.0)).xyz;
-	WorldNormal = (WorldMatrix * vec4(normal.xyz, 0.0)).xyz;
+	//WorldNormal = (WorldMatrix * vec4(normal.xyz, 0.0)).xyz;
+	WorldNormal = (WorldMatrix * vec4(VertexNormal, 0.0)).xyz;
 	TexCoord = VertexTexCoord;
 	Height = height.x;
 	

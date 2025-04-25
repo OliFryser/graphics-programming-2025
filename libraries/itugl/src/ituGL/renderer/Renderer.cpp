@@ -234,10 +234,11 @@ void Renderer::PrepareDrawcall(const DrawcallInfo& drawcallInfo)
 void Renderer::SetLightingRenderStates(bool firstPass)
 {
     // Set the render states for the first and additional lights
-    m_device.SetFeatureEnabled(GL_BLEND, !firstPass);
+    //m_device.SetFeatureEnabled(GL_BLEND, !firstPass);
+
     // TODO: This should not be hardcoded here
     glDepthFunc(firstPass ? GL_LESS : GL_EQUAL);
-    glBlendFunc(GL_ONE, GL_ONE);
+    //glBlendFunc(GL_ONE, GL_ONE);
 }
 
 void Renderer::InitializeFullscreenMesh()
