@@ -38,7 +38,7 @@ void main()
 	tex = mix(tex, color1, inverseMix(ColorTextureRange01, Height));
 	tex = mix(tex, color2, inverseMix(ColorTextureRange12, Height));
 	tex = mix(tex, color3, inverseMix(ColorTextureRange23, Height));
-    
+
 	SurfaceData data;
 	data.normal = normalize(WorldNormal);
 	data.reflectionColor = Color.rgb * tex.rgb;
@@ -53,5 +53,4 @@ void main()
 	vec3 color = ComputeLighting(position, data, viewDir, true);
 	
 	FragColor = vec4(color, 1.0);
-	
 }

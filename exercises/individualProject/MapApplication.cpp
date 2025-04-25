@@ -150,8 +150,8 @@ void MapApplication::InitializeMaterials()
         fragmentShaderPaths.push_back("shaders/utils.glsl");
         fragmentShaderPaths.push_back("shaders/blinn-phong.glsl");
         fragmentShaderPaths.push_back("shaders/lighting.glsl");
-        fragmentShaderPaths.push_back("shaders/terrain.frag");
-        Shader terrainVS = m_vertexShaderLoader.Load("shaders/terrain.vert");
+        fragmentShaderPaths.push_back("shaders/quantizedTerrain.frag");
+        Shader terrainVS = m_vertexShaderLoader.Load("shaders/quantizedTerrain.vert");
         Shader terrainFS = m_fragmentShaderLoader.Load(fragmentShaderPaths);
         std::shared_ptr<ShaderProgram> terrainShaderProgram = std::make_shared<ShaderProgram>();
         terrainShaderProgram->Build(terrainVS, terrainFS);
@@ -183,6 +183,7 @@ void MapApplication::InitializeMaterials()
         m_terrainMaterials[0]->SetUniformValue("ColorTextureRange23", glm::vec2(.7f, .8f));
         m_terrainMaterials[0]->SetUniformValue("ColorTextureScale", glm::vec2(0.05f));
         m_terrainMaterials[0]->SetUniformValue("Color", glm::vec4(1.0f));
+        m_terrainMaterials[0]->SetUniformValue("TerrainWidth", static_cast<int>(m_gridX));
 
 
         for (int i = 1; i < m_gridWidth * m_gridHeight; i++)
@@ -225,6 +226,7 @@ void MapApplication::InitializeMaterials()
         );
 
         m_waterMaterial = std::make_shared<Material>(waterShaderProgram);
+        m_waterMaterial->SetUniformValue("TerrainWidth", static_cast<int>(m_gridX));
         m_waterMaterial->SetUniformValue("ColorTexture", m_waterTexture);
         m_waterMaterial->SetUniformValue("ColorTextureScale", glm::vec2(0.05f));
         m_waterMaterial->SetUniformValue("Color", glm::vec4(1.0f, 1.0f, 1.0f, .6f));

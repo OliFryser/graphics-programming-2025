@@ -15,20 +15,20 @@ uniform sampler2D NormalMap;
 uniform mat4 WorldMatrix;
 uniform mat4 ViewProjMatrix;
 
+uniform int TerrainWidth;
 uniform float SmoothingAmount;
 uniform float QuantizeStep;
 uniform float HeightStep;
 
 void main()
 {
-	vec4 height = texture(Heightmap, (VertexPosition.xz * 127 + 0.5)/128);
-	//vec4 height = texture(Heightmap, VertexPosition.xz);
+	vec4 height = texture(Heightmap, (VertexPosition.xz * (TerrainWidth - 1) + 0.5) / TerrainWidth);
 	vec4 normal = texture(NormalMap, (VertexPosition.xz * 127 + 0.5)/128);
+	//vec4 normal = texture(NormalMap, VertexPosition.xz);
 
 	WorldPosition = (WorldMatrix * vec4(VertexPosition.x, height.x, VertexPosition.z, 1.0)).xyz;
-	// transform normal vector to range [-1,1]
-    normal = normalize(normal * 2.0 - 1.0);
 	WorldNormal = (WorldMatrix * vec4(normal.xyz, 0.0)).xyz;
+	//WorldNormal = (WorldMatrix * vec4(VertexNormal, 0.0)).xyz;
 	TexCoord = VertexTexCoord;
 	Height = height.x;
 	
