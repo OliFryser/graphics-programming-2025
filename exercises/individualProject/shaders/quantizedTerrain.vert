@@ -41,20 +41,20 @@ float QuantizeHeight(float height)
 float SampleHeightMap(vec2 samplePoint)
 {
 	// wrap around texture
-	//samplePoint.x = mod(samplePoint.x + TerrainWidth, TerrainWidth);
-	//samplePoint.y = mod(samplePoint.y + TerrainWidth, TerrainWidth);
+	samplePoint.x = mod(samplePoint.x + TerrainWidth - 1, TerrainWidth - 1);
+	samplePoint.y = mod(samplePoint.y + TerrainWidth - 1, TerrainWidth - 1);
 	return (texture(Heightmap, (samplePoint * (TerrainWidth - 1) + 0.5) / TerrainWidth)).x * HeightScale;
 }
 
 vec3 CalculateNormalFromNeighbors()
 {
-	vec2 posL = VertexPosition.xz + vec2(-1, 0) / vec2(TerrainWidth - 1, TerrainWidth - 1);
+	vec2 posL = VertexPosition.xz + vec2(-1, 0) / vec2(TerrainWidth - 1);
 	float heightL = SampleHeightMap(posL);
-	vec2 posR = VertexPosition.xz + vec2(1, 0) / vec2(TerrainWidth - 1, TerrainWidth - 1);
+	vec2 posR = VertexPosition.xz + vec2(1, 0) / vec2(TerrainWidth - 1);
 	float heightR = SampleHeightMap(posR);
-	vec2 posD = VertexPosition.xz + vec2(0, -1) / vec2(TerrainWidth - 1, TerrainWidth - 1);
+	vec2 posD = VertexPosition.xz + vec2(0, -1) / vec2(TerrainWidth - 1);
 	float heightD = SampleHeightMap(posD);
-	vec2 posU = VertexPosition.xz + vec2(0, 1) / vec2(TerrainWidth - 1, TerrainWidth - 1);
+	vec2 posU = VertexPosition.xz + vec2(0, 1) / vec2(TerrainWidth - 1);
 	float heightU = SampleHeightMap(posU);
 	if (QuantizeTerrain)
 	{

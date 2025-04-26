@@ -33,6 +33,7 @@ void main()
 	vec4 color2 = texture(ColorTexture2, TexCoord * ColorTextureScale);
 	vec4 color3 = texture(ColorTexture3, TexCoord * ColorTextureScale);
 
+	// I could check if this frag is under waterlevel and darken it by multiplying by a darker color
 	// Mix between them according to height ranges
 	vec4 tex = color0;
 	tex = mix(tex, color1, inverseMix(ColorTextureRange01, Height));
