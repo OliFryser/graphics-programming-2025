@@ -16,30 +16,71 @@ uniform mat4 WorldMatrix;
 uniform mat4 ViewProjMatrix;
 
 uniform int TerrainWidth;
+uniform int ChunkRows;
+uniform int ChunkColumns;
+uniform bool QuantizeTerrain;
 
 uniform int Levels;
 uniform float SmoothingAmount;
-uniform float QuantizeStep;
 uniform float HeightScale;
 
-void main()
+float QuantizeHeight(float height)
 {
-	float height = (texture(Heightmap, (VertexPosition.xz * (TerrainWidth - 1) + 0.5) / TerrainWidth)).x * HeightScale;
-	
 	float level = ceil(height * Levels);
 	float base = level / Levels;
 	float above = (level + 1.0) / Levels;
 
-	// How close are we to the next plateau?
+	// get the fractional part (how close we are to the next plateau)
 	float t = height * Levels - (level - 1.0);
 
 	// Smooth transition
-	float smoothT = smoothstep(0.0, SmoothingAmount, t); // SmoothingAmount is a small value like 0.05
-	height = mix(base, above, smoothT);
-	
-	vec4 normal = texture(NormalMap, (VertexPosition.xz * 127 + 0.5)/128);
-	WorldPosition = (WorldMatrix * vec4(VertexPosition.x, height, VertexPosition.z, 1.0)).xyz;
+	float smoothT = smoothstep(0.0, SmoothingAmount, t);
+	return mix(base, above, smoothT);
+}
 
+float SampleHeightMap(vec2 samplePoint)
+{
+	// wrap around texture
+	//samplePoint.x = mod(samplePoint.x + TerrainWidth, TerrainWidth);
+	//samplePoint.y = mod(samplePoint.y + TerrainWidth, TerrainWidth);
+	return (texture(Heightmap, (samplePoint * (TerrainWidth - 1) + 0.5) / TerrainWidth)).x * HeightScale;
+}
+
+vec3 CalculateNormalFromNeighbors()
+{
+	vec2 posL = VertexPosition.xz + vec2(-1, 0) / vec2(TerrainWidth - 1, TerrainWidth - 1);
+	float heightL = SampleHeightMap(posL);
+	vec2 posR = VertexPosition.xz + vec2(1, 0) / vec2(TerrainWidth - 1, TerrainWidth - 1);
+	float heightR = SampleHeightMap(posR);
+	vec2 posD = VertexPosition.xz + vec2(0, -1) / vec2(TerrainWidth - 1, TerrainWidth - 1);
+	float heightD = SampleHeightMap(posD);
+	vec2 posU = VertexPosition.xz + vec2(0, 1) / vec2(TerrainWidth - 1, TerrainWidth - 1);
+	float heightU = SampleHeightMap(posU);
+	if (QuantizeTerrain)
+	{
+		heightL = QuantizeHeight(heightL);
+		heightR = QuantizeHeight(heightR);
+		heightD = QuantizeHeight(heightD);
+		heightU = QuantizeHeight(heightU);
+	}
+
+	vec3 dx = normalize(vec3(posL.x, heightL, posL.y) - vec3(posR.x, heightR, posR.y));
+	vec3 dz = normalize(vec3(posD.x, heightD, posD.y) - vec3(posU.x, heightU, posU.y));
+
+    return normalize(cross(dz, dx));
+}
+
+void main()
+{
+	float height = SampleHeightMap(VertexPosition.xz);
+	
+	if (QuantizeTerrain)
+		height = QuantizeHeight(height);
+	
+	//vec4 normal = texture(NormalMap, (VertexPosition.xz * 127 + 0.5)/128);
+	vec3 normal = CalculateNormalFromNeighbors();
+
+	WorldPosition = (WorldMatrix * vec4(VertexPosition.x, height, VertexPosition.z, 1.0)).xyz;
 	WorldNormal = (WorldMatrix * vec4(normal.xyz, 0.0)).xyz;
 	TexCoord = VertexTexCoord;
 	Height = height;

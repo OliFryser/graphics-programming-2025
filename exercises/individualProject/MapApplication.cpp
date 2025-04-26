@@ -31,16 +31,16 @@
 MapApplication::MapApplication()
     : Application(1024, 1024, "Individual Project")
     , m_gridX(128), m_gridY(128)
-    , m_gridWidth(2), m_gridHeight(2)
+    , m_gridWidth(10), m_gridHeight(10)
     , m_vertexShaderLoader(Shader::Type::VertexShader)
     , m_fragmentShaderLoader(Shader::Type::FragmentShader)
     , m_renderer(GetDevice())
     , m_ambientColor(.25f)
-    , m_heightScale(1.0f)
-    , m_quantizeStep(.1f)
+    , m_heightScale(.5f)
     , m_smoothingAmount(0.05f)
-    , m_waterLevel(-.15f)
-    , m_levels(5)
+    , m_waterLevel(2.5f)
+    , m_levels(10)
+    , m_quantizeTerrain(true)
 {
 }
 
@@ -92,9 +92,9 @@ void MapApplication::Update()
     m_waterMaterial->SetUniformValue("Time", GetCurrentTime());
     UpdateMaterialsUniform("AmbientColor", m_ambientColor);
     UpdateTerrainMaterialsUniform("HeightScale", m_heightScale);
-    UpdateTerrainMaterialsUniform("QuantizeStep", m_quantizeStep);
     UpdateTerrainMaterialsUniform("SmoothingAmount", m_smoothingAmount);
     UpdateTerrainMaterialsUniform("Levels", m_levels);
+    UpdateTerrainMaterialsUniform("QuantizeTerrain", static_cast<int>(m_quantizeTerrain));
 
     for (int i = 0; i < m_gridWidth * m_gridHeight; i++)
     {
@@ -133,12 +133,12 @@ void MapApplication::RenderGui()
 
     if (auto window = m_imGui.UseWindow("Terrain Options"))
     {
-        ImGui::DragInt("Levels", &m_levels);
-        ImGui::DragFloat("Height Scale", &m_heightScale, .05f);
-        ImGui::DragFloat("Quantize Step", &m_quantizeStep, .05f);
-        ImGui::DragFloat("Smoothing Amount", &m_smoothingAmount, .05f);
+        ImGui::DragInt("Levels", &m_levels, 1.0f);
+        ImGui::DragFloat("Height Scale", &m_heightScale, .05f, 0.0f);
+        ImGui::DragFloat("Smoothing Amount", &m_smoothingAmount, .005f, 0.0f, 10.0f);
 
-        ImGui::DragFloat("Water Level", &m_waterLevel, .05f);
+        ImGui::DragFloat("Water Level", &m_waterLevel, .05f, 0.0f);
+        ImGui::Checkbox("Quantize Terrain", &m_quantizeTerrain);
         
     }
 
@@ -225,6 +225,8 @@ void MapApplication::InitializeMaterials()
         m_terrainMaterials[0]->SetUniformValue("ColorTextureScale", glm::vec2(0.05f));
         m_terrainMaterials[0]->SetUniformValue("Color", glm::vec4(1.0f));
         m_terrainMaterials[0]->SetUniformValue("TerrainWidth", static_cast<int>(m_gridX));
+        m_terrainMaterials[0]->SetUniformValue("ChunkRows", static_cast<int>(m_gridHeight));
+        m_terrainMaterials[0]->SetUniformValue("ChunkColumns", static_cast<int>(m_gridWidth));
         
         m_terrainMaterials[0]->SetUniformValue("AmbientColor", glm::vec3(0.25f));
         m_terrainMaterials[0]->SetUniformValue("Levels", m_levels);
@@ -296,6 +298,8 @@ void MapApplication::InitializeMeshes()
 
 void MapApplication::InitializeModels()
 {
+    glm::vec3 scale = glm::vec3(10.0f);
+
     std::vector<glm::vec3> gridPositionTranslations;
     for (int z = 0; z < m_gridHeight; z++)
     {
@@ -305,7 +309,6 @@ void MapApplication::InitializeModels()
         }
     }
 
-    glm::vec3 pushDownTranslate = glm::vec3(0.0f, -.5f, 0.0f);
     auto terrainPatchPtr = std::make_shared<Mesh>();
 
     auto waterModelPointer = std::make_shared<Model>(m_terrainPatch);
@@ -315,16 +318,16 @@ void MapApplication::InitializeModels()
     {
         auto terrainModelPointer = std::make_shared<Model>(m_terrainPatch);
         std::shared_ptr<Transform> terrainTransform = std::make_shared<Transform>();
-        terrainTransform->SetScale(glm::vec3(10.0f));
-        terrainTransform->SetTranslation(glm::vec3(10.0f) * (gridPositionTranslations[i] + pushDownTranslate));
+        terrainTransform->SetScale(scale);
+        terrainTransform->SetTranslation(scale * gridPositionTranslations[i]);
         terrainModelPointer->AddMaterial(m_terrainMaterials[i]);
         const std::string& terrainChunkName = std::format("Terrain chunk {}", i);
         auto terrainChunkNode = std::make_shared<SceneModel>(terrainChunkName, terrainModelPointer, terrainTransform);
         m_scene.AddSceneNode(terrainChunkNode);
 
         auto waterTransform = std::make_shared<Transform>();
-        waterTransform->SetScale(glm::vec3(10.0f));
-        waterTransform->SetTranslation(glm::vec3(10.0f) * (gridPositionTranslations[i]));
+        waterTransform->SetScale(scale);
+        waterTransform->SetTranslation(scale * (gridPositionTranslations[i]));
         const std::string& waterChunkName = std::format("Water chunk {}", i);
         m_waterScene.AddSceneNode(
             std::make_shared<SceneModel>(
@@ -432,9 +435,9 @@ void MapApplication::CreateHeightMap(unsigned int width, unsigned int height, gl
             float heightU = y == height - 1 ? pixels[y * columns + x] : pixels[(y + 1) * columns + x];
             
             auto dx = glm::vec3(1, 0, (heightR - heightL) / 2.0);
-            auto dy = glm::vec3(0, 1, (heightU - heightD) / 2.0);
+            auto dz = glm::vec3(0, 1, (heightU - heightD) / 2.0);
 
-            auto normal = glm::normalize(glm::cross(dy, dx));
+            auto normal = glm::normalize(glm::cross(dz, dx));
             normals.push_back(normal.x);
             normals.push_back(normal.y);
             normals.push_back(normal.z);
@@ -450,6 +453,8 @@ void MapApplication::CreateHeightMap(unsigned int width, unsigned int height, gl
     heightmap->Bind();
     heightmap->SetImage<float>(0, width, height, TextureObject::FormatR, TextureObject::InternalFormatR16F, pixels);
     heightmap->GenerateMipmap();
+    heightmap->SetParameter(Texture2DObject::ParameterEnum::WrapS, GL_REPEAT);
+    heightmap->SetParameter(Texture2DObject::ParameterEnum::WrapT, GL_REPEAT);
     m_heightMaps.push_back(heightmap);
     Texture2DObject::Unbind();
 }

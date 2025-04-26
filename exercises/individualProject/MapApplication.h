@@ -101,9 +101,10 @@ private:
 
     glm::vec3 m_ambientColor;
 
-    float m_heightScale, m_smoothingAmount, m_quantizeStep;
+    float m_heightScale, m_smoothingAmount;
     float m_waterLevel;
     int m_levels;
+    bool m_quantizeTerrain;
 
     std::shared_ptr<Mesh> m_terrainPatch;
     std::vector<std::shared_ptr<Material>> m_terrainMaterials;
