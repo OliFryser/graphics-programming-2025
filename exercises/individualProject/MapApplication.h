@@ -103,6 +103,7 @@ private:
 
     float m_heightScale, m_smoothingAmount, m_quantizeStep;
     float m_waterLevel;
+    int m_levels;
 
     std::shared_ptr<Mesh> m_terrainPatch;
     std::vector<std::shared_ptr<Material>> m_terrainMaterials;

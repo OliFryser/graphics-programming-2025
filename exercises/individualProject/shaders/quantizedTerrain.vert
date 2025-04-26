@@ -16,30 +16,31 @@ uniform mat4 WorldMatrix;
 uniform mat4 ViewProjMatrix;
 
 uniform int TerrainWidth;
+
+uniform int Levels;
 uniform float SmoothingAmount;
 uniform float QuantizeStep;
 uniform float HeightScale;
 
 void main()
 {
-	float height = (texture(Heightmap, (VertexPosition.xz * (TerrainWidth - 1) + 0.5) / TerrainWidth)).x;
+	float height = (texture(Heightmap, (VertexPosition.xz * (TerrainWidth - 1) + 0.5) / TerrainWidth)).x * HeightScale;
 	
-	float level = floor(height / QuantizeStep);
-    float base = level * QuantizeStep;
-	float next = (level + 1) * QuantizeStep;
+	float level = ceil(height * Levels);
+	float base = level / Levels;
+	float above = (level + 1.0) / Levels;
 
-	// Smooth between levels
-    float t = smoothstep(base, base + SmoothingAmount, height);
-    float smoothedHeight = mix(base, next, t);
+	// How close are we to the next plateau?
+	float t = height * Levels - (level - 1.0);
 
-	height = (height) * HeightScale;
+	// Smooth transition
+	float smoothT = smoothstep(0.0, SmoothingAmount, t); // SmoothingAmount is a small value like 0.05
+	height = mix(base, above, smoothT);
 	
 	vec4 normal = texture(NormalMap, (VertexPosition.xz * 127 + 0.5)/128);
-	//vec4 normal = texture(NormalMap, VertexPosition.xz);
-
 	WorldPosition = (WorldMatrix * vec4(VertexPosition.x, height, VertexPosition.z, 1.0)).xyz;
+
 	WorldNormal = (WorldMatrix * vec4(normal.xyz, 0.0)).xyz;
-	//WorldNormal = (WorldMatrix * vec4(VertexNormal, 0.0)).xyz;
 	TexCoord = VertexTexCoord;
 	Height = height;
 	

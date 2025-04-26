@@ -38,8 +38,9 @@ MapApplication::MapApplication()
     , m_ambientColor(.25f)
     , m_heightScale(1.0f)
     , m_quantizeStep(.1f)
-    , m_smoothingAmount(1.0f)
+    , m_smoothingAmount(0.05f)
     , m_waterLevel(-.15f)
+    , m_levels(5)
 {
 }
 
@@ -93,6 +94,7 @@ void MapApplication::Update()
     UpdateTerrainMaterialsUniform("HeightScale", m_heightScale);
     UpdateTerrainMaterialsUniform("QuantizeStep", m_quantizeStep);
     UpdateTerrainMaterialsUniform("SmoothingAmount", m_smoothingAmount);
+    UpdateTerrainMaterialsUniform("Levels", m_levels);
 
     for (int i = 0; i < m_gridWidth * m_gridHeight; i++)
     {
@@ -131,6 +133,7 @@ void MapApplication::RenderGui()
 
     if (auto window = m_imGui.UseWindow("Terrain Options"))
     {
+        ImGui::DragInt("Levels", &m_levels);
         ImGui::DragFloat("Height Scale", &m_heightScale, .05f);
         ImGui::DragFloat("Quantize Step", &m_quantizeStep, .05f);
         ImGui::DragFloat("Smoothing Amount", &m_smoothingAmount, .05f);
@@ -222,8 +225,9 @@ void MapApplication::InitializeMaterials()
         m_terrainMaterials[0]->SetUniformValue("ColorTextureScale", glm::vec2(0.05f));
         m_terrainMaterials[0]->SetUniformValue("Color", glm::vec4(1.0f));
         m_terrainMaterials[0]->SetUniformValue("TerrainWidth", static_cast<int>(m_gridX));
-
+        
         m_terrainMaterials[0]->SetUniformValue("AmbientColor", glm::vec3(0.25f));
+        m_terrainMaterials[0]->SetUniformValue("Levels", m_levels);
 
         m_terrainMaterials[0]->SetUniformValue("EnvironmentTexture", m_skyboxTexture);
         m_terrainMaterials[0]->SetUniformValue("EnvironmentMaxLod", maxLod);
@@ -270,10 +274,10 @@ void MapApplication::InitializeMaterials()
 
         m_waterMaterial = std::make_shared<Material>(waterShaderProgram);
 
-        m_terrainMaterials[0]->SetUniformValue("AmbientColor", glm::vec3(0.25f));
+        m_waterMaterial->SetUniformValue("AmbientColor", glm::vec3(0.25f));
 
-        m_terrainMaterials[0]->SetUniformValue("EnvironmentTexture", m_skyboxTexture);
-        m_terrainMaterials[0]->SetUniformValue("EnvironmentMaxLod", maxLod);
+        m_waterMaterial->SetUniformValue("EnvironmentMaxLod", maxLod);
+        m_waterMaterial->SetUniformValue("EnvironmentTexture", m_skyboxTexture);
         
         m_waterMaterial->SetUniformValue("TerrainWidth", static_cast<int>(m_gridX));
         m_waterMaterial->SetUniformValue("ColorTexture", m_waterTexture);
@@ -407,7 +411,7 @@ void MapApplication::CreateHeightMap(unsigned int width, unsigned int height, gl
             float x = i / static_cast<float>(width - 1);
             float y = j / static_cast<float>(height - 1);
 
-            float height = (stb_perlin_fbm_noise3(x + coords.x, y + coords.y, 0.0f, 2.0f, .5f, 6) + 1.0f) * .5f;
+            float height = stb_perlin_fbm_noise3(x + coords.x, y + coords.y, 0.0f, 2.0f, .5f, 6) * .5f + .5f;
 
             pixels.push_back(height);
         }
