@@ -41,8 +41,8 @@ float QuantizeHeight(float height)
 float SampleHeightMap(vec2 samplePoint)
 {
 	// wrap around texture
-	samplePoint.x = mod(samplePoint.x + TerrainWidth - 1, TerrainWidth - 1);
-	samplePoint.y = mod(samplePoint.y + TerrainWidth - 1, TerrainWidth - 1);
+	samplePoint.x = mod(samplePoint.x + TerrainWidth, TerrainWidth);
+	samplePoint.y = mod(samplePoint.y + TerrainWidth, TerrainWidth);
 	return (texture(Heightmap, (samplePoint * (TerrainWidth - 1) + 0.5) / TerrainWidth)).x * HeightScale;
 }
 

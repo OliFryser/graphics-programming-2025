@@ -10,6 +10,6 @@ public:
 
     void Render() override;
 
-private:
+protected:
     int m_drawcallCollectionIndex;
 };
