@@ -95,6 +95,7 @@ void MapApplication::Update()
     UpdateTerrainMaterialsUniform("SmoothingAmount", m_smoothingAmount);
     UpdateTerrainMaterialsUniform("Levels", m_levels);
     UpdateTerrainMaterialsUniform("QuantizeTerrain", static_cast<int>(m_quantizeTerrain));
+    
 
     for (int i = 0; i < m_gridWidth * m_gridHeight; i++)
     {
@@ -453,8 +454,8 @@ void MapApplication::CreateHeightMap(unsigned int width, unsigned int height, gl
     heightmap->Bind();
     heightmap->SetImage<float>(0, width, height, TextureObject::FormatR, TextureObject::InternalFormatR16F, pixels);
     heightmap->GenerateMipmap();
-    heightmap->SetParameter(Texture2DObject::ParameterEnum::WrapS, GL_REPEAT);
-    heightmap->SetParameter(Texture2DObject::ParameterEnum::WrapT, GL_REPEAT);
+    heightmap->SetParameter(Texture2DObject::ParameterEnum::WrapS, GL_MIRRORED_REPEAT);
+    heightmap->SetParameter(Texture2DObject::ParameterEnum::WrapT, GL_MIRRORED_REPEAT);
     m_heightMaps.push_back(heightmap);
     Texture2DObject::Unbind();
 }
