@@ -36,8 +36,11 @@ private:
     void InitializeModels();
     void InitializeCamera();
     void InitializeRenderer();
+    void InitializeFramebuffers();
 
     void RenderGui();
+
+    void DrawRaymarchGui();
 
     template <typename T>
     void UpdateMaterialsUniform(const char* uniformName, T value)
@@ -80,6 +83,8 @@ private:
 
     void CreateTerrainMesh(unsigned int gridX, unsigned int gridY);
 
+    std::shared_ptr<Material> CreateRaymarchingMaterial(const char* fragmentShaderPath, std::shared_ptr<Texture2DObject> sourceTexture = nullptr);
+
 private:
     const int TERRAIN_MESH_COUNT = 4;
 
@@ -109,6 +114,7 @@ private:
     std::shared_ptr<Mesh> m_terrainPatch;
     std::vector<std::shared_ptr<Material>> m_terrainMaterials;
     std::shared_ptr<Material> m_waterMaterial;
+    std::shared_ptr<Material> m_cloudsMaterial;
     
     std::shared_ptr<Texture2DObject> m_defaultTexture;
     std::shared_ptr<Texture2DObject> m_dirtTexture;
@@ -116,6 +122,11 @@ private:
     std::shared_ptr<Texture2DObject> m_rockTexture;
     std::shared_ptr<Texture2DObject> m_snowTexture;
     std::shared_ptr<Texture2DObject> m_waterTexture;
+
+    // Framebuffers
+    std::shared_ptr<FramebufferObject> m_sceneFramebuffer;
+    std::shared_ptr<Texture2DObject> m_depthTexture;
+    std::shared_ptr<Texture2DObject> m_sceneTexture;
 
     std::vector<std::shared_ptr<Texture2DObject>> m_heightMaps;
     std::vector<std::shared_ptr<Texture2DObject>> m_normalMaps;

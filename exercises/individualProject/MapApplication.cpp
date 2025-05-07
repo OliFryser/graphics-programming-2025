@@ -2,6 +2,7 @@
 
 #include <ituGL/asset/TextureCubemapLoader.h>
 #include <ituGL/texture/Texture2DObject.h>
+#include <ituGL/texture/FramebufferObject.h>
 
 #include <ituGL/renderer/ForwardRenderPass.h>
 #include <ituGL/renderer/SkyboxRenderPass.h>
@@ -27,11 +28,12 @@
 
 #include <imgui.h>
 #include <format>
+#include <ituGL/renderer/PostFXRenderPass.h>
 
 MapApplication::MapApplication()
     : Application(1024, 1024, "Individual Project")
     , m_gridX(128), m_gridY(128)
-    , m_gridWidth(4), m_gridHeight(4)
+    , m_gridWidth(2), m_gridHeight(2)
     , m_vertexShaderLoader(Shader::Type::VertexShader)
     , m_fragmentShaderLoader(Shader::Type::FragmentShader)
     , m_renderer(GetDevice())
@@ -41,6 +43,7 @@ MapApplication::MapApplication()
     , m_waterLevel(2.5f)
     , m_levels(10)
     , m_quantizeTerrain(true)
+    , m_sceneFramebuffer(std::make_shared<FramebufferObject>())
 {
 }
 
@@ -107,7 +110,7 @@ void MapApplication::Update()
     // Add the scene nodes to the renderer
     RendererSceneVisitor rendererSceneVisitor(m_renderer);
     m_scene.AcceptVisitor(rendererSceneVisitor);
-    m_waterScene.AcceptVisitor(rendererSceneVisitor);
+    //m_waterScene.AcceptVisitor(rendererSceneVisitor);
 }
 
 void MapApplication::Render()
@@ -151,7 +154,54 @@ void MapApplication::RenderGui()
     // Draw GUI for camera controller
     m_cameraController.DrawGUI(m_imGui);
 
+    //DrawRaymarchGui();
+
     m_imGui.EndFrame();
+}
+
+void MapApplication::DrawRaymarchGui()
+{
+    if (auto window = m_imGui.UseWindow("Raymarch parameters"))
+    {
+        const auto& viewTransform = m_cameraController.GetCamera()->GetCamera()->GetViewMatrix();
+
+        if (ImGui::TreeNodeEx("Sphere", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            static glm::vec3 sphereCenter(glm::vec3(-2.0f, 0.0f, -10.0f));
+
+            ImGui::ColorEdit3("Sphere Color", m_cloudsMaterial->GetDataUniformPointer<float>("SphereColor"));
+            ImGui::DragFloat3("Sphere Center", &sphereCenter.x, .1f);
+            auto transformedPosition = (viewTransform * glm::vec4(sphereCenter, 1.0));
+            m_cloudsMaterial->SetUniformValue("SphereCenter", glm::vec3(transformedPosition.x, transformedPosition.y, transformedPosition.z));
+
+            ImGui::DragFloat("Sphere Radius", m_cloudsMaterial->GetDataUniformPointer<float>("SphereRadius"), .1f);
+            ImGui::TreePop();
+        }
+        if (ImGui::TreeNodeEx("Box", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            static glm::vec3 translation(2, 0, -10);
+            static glm::vec3 rotation(0.0f);
+
+            ImGui::ColorEdit3("Box Color", m_cloudsMaterial->GetDataUniformPointer<float>("BoxColor"));
+            ImGui::DragFloat3("Box Translation", &translation.x, .1f);
+            ImGui::DragFloat3("Box rotation", &rotation.x, .1f);
+
+            auto boxTransform = glm::translate(translation);
+            boxTransform = glm::rotate(boxTransform, rotation.x, glm::vec3(1.0f, .0f, .0f));
+            boxTransform = glm::rotate(boxTransform, rotation.y, glm::vec3(.0f, 1.0f, .0f));
+            boxTransform = glm::rotate(boxTransform, rotation.z, glm::vec3(.0f, .0f, 1.0f));
+
+            m_cloudsMaterial->SetUniformValue("BoxMatrix", viewTransform * boxTransform);
+
+            ImGui::DragFloat("Box Size", m_cloudsMaterial->GetDataUniformPointer<float>("BoxSize"), .1f);
+            ImGui::TreePop();
+        }
+        if (ImGui::TreeNodeEx("Ray Marching", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            ImGui::DragFloat("Smoothness", m_cloudsMaterial->GetDataUniformPointer<float>("Smoothness"), .01f);
+            ImGui::TreePop();
+        }
+    }
 }
 
 void MapApplication::Cleanup()
@@ -288,7 +338,17 @@ void MapApplication::InitializeMaterials()
         m_waterMaterial->SetUniformValue("Color", glm::vec4(1.0f, 1.0f, 1.0f, .6f));
         m_waterMaterial->SetBlendParams(Material::BlendParam::SourceAlpha, Material::BlendParam::OneMinusSourceAlpha);
         m_waterMaterial->SetBlendEquation(Material::BlendEquation::Add);
+
     }
+    m_cloudsMaterial = CreateRaymarchingMaterial("shaders/raymarching/cloud.glsl", m_sceneTexture);
+
+    m_cloudsMaterial->SetUniformValue("SphereColor", glm::vec3(0.0f, 0.0f, 1.0f));
+    m_cloudsMaterial->SetUniformValue("SphereCenter", glm::vec3(-2.0f, 0.0f, -10.0f));
+    m_cloudsMaterial->SetUniformValue("SphereRadius", 1.25f);
+    m_cloudsMaterial->SetUniformValue("BoxColor", glm::vec3(1.0f, 0.0f, .0f));
+    m_cloudsMaterial->SetUniformValue("BoxMatrix", glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 2, 0, -10, 1));
+    m_cloudsMaterial->SetUniformValue("BoxSize", glm::vec3(1.0f, 1.0f, 1.0f));
+    m_cloudsMaterial->SetUniformValue("Smoothness", .5f);
 }
 
 void MapApplication::InitializeMeshes()
@@ -338,8 +398,43 @@ void MapApplication::InitializeModels()
 
 void MapApplication::InitializeRenderer()
 {
-    m_renderer.AddRenderPass(std::make_unique<ForwardRenderPass>());
+    InitializeFramebuffers();
+    m_renderer.AddRenderPass(std::make_unique<ForwardRenderPass>(m_sceneFramebuffer));
     m_renderer.AddRenderPass(std::make_unique<SkyboxRenderPass>(m_skyboxTexture));
+    m_renderer.AddRenderPass(std::make_unique<PostFXRenderPass>(m_cloudsMaterial, m_renderer.GetDefaultFramebuffer()));
+}
+
+void MapApplication::InitializeFramebuffers()
+{
+    int width, height;
+    GetMainWindow().GetDimensions(width, height);
+
+    // Scene Texture
+    m_sceneTexture = std::make_shared<Texture2DObject>();
+    m_sceneTexture->Bind();
+    m_sceneTexture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormat::InternalFormatRGBA16F);
+    m_sceneTexture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_LINEAR);
+    m_sceneTexture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_LINEAR);
+    Texture2DObject::Unbind();
+
+    // Depth texture
+    m_depthTexture = std::make_shared<Texture2DObject>();
+    m_depthTexture->Bind();
+    m_depthTexture->SetImage(0, width, height, TextureObject::FormatDepth, TextureObject::InternalFormat::InternalFormatDepth);
+    m_depthTexture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_LINEAR);
+    m_depthTexture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_LINEAR);
+    Texture2DObject::Unbind();
+
+    // Scene framebuffer
+    m_sceneFramebuffer->Bind();
+    m_sceneFramebuffer->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Color0, *m_sceneTexture);
+    //m_sceneFramebuffer->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Depth, *m_depthTexture);
+    m_sceneFramebuffer->SetDrawBuffers(std::array<FramebufferObject::Attachment, 1>
+        ({ 
+            FramebufferObject::Attachment::Color0
+        })
+    );
+    FramebufferObject::Unbind();
 }
 
 void MapApplication::InitializeCamera()
@@ -528,4 +623,44 @@ void MapApplication::CreateTerrainMesh(unsigned int gridX, unsigned int gridY)
 
     m_terrainPatch->AddSubmesh<Vertex, unsigned int, VertexFormat::LayoutIterator>(Drawcall::Primitive::Triangles, vertices, indices,
         vertexFormat.LayoutBegin(static_cast<int>(vertices.size()), true /* interleaved */), vertexFormat.LayoutEnd());
+}
+
+std::shared_ptr<Material> MapApplication::CreateRaymarchingMaterial(const char* fragmentShaderPath, std::shared_ptr<Texture2DObject> sourceTexture)
+{
+    // We could keep this vertex shader and reuse it, but it looks simpler this way
+    std::vector<const char*> vertexShaderPaths;
+    vertexShaderPaths.push_back("shaders/version330.glsl");
+    vertexShaderPaths.push_back("shaders/renderer/fullscreen.vert");
+    Shader vertexShader = ShaderLoader(Shader::VertexShader).Load(vertexShaderPaths);
+
+    std::vector<const char*> fragmentShaderPaths;
+    fragmentShaderPaths.push_back("shaders/version330.glsl");
+    fragmentShaderPaths.push_back("shaders/utils.glsl");
+    fragmentShaderPaths.push_back("shaders/raymarching/sdflibrary.glsl");
+    fragmentShaderPaths.push_back("shaders/raymarching/raymarcher.glsl");
+    fragmentShaderPaths.push_back("shaders/raymarching/copy.frag");
+    //fragmentShaderPaths.push_back(fragmentShaderPath);
+    //fragmentShaderPaths.push_back("shaders/raymarching/raymarching.frag");
+    Shader fragmentShader = ShaderLoader(Shader::FragmentShader).Load(fragmentShaderPaths);
+
+    std::shared_ptr<ShaderProgram> shaderProgramPtr = std::make_shared<ShaderProgram>();
+    shaderProgramPtr->Build(vertexShader, fragmentShader);
+
+    ShaderProgram::Location projMatrixLocation = shaderProgramPtr->GetUniformLocation("ProjMatrix");
+    ShaderProgram::Location invProjMatrixLocation = shaderProgramPtr->GetUniformLocation("InvProjMatrix");
+    m_renderer.RegisterShaderProgram(shaderProgramPtr,
+        [=](const ShaderProgram& shaderProgram, const glm::mat4& worldMatrix, const Camera& camera, bool cameraChanged)
+        {
+            if (cameraChanged)
+            {
+                shaderProgram.SetUniform(projMatrixLocation, camera.GetProjectionMatrix());
+                shaderProgram.SetUniform(invProjMatrixLocation, glm::inverse(camera.GetProjectionMatrix()));
+            }
+        }, m_renderer.GetDefaultUpdateLightsFunction(*shaderProgramPtr));
+
+    // Create material
+    std::shared_ptr<Material> material = std::make_shared<Material>(shaderProgramPtr);
+    material->SetUniformValue("SourceTexture", sourceTexture);
+
+    return material;
 }

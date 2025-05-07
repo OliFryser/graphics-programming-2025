@@ -5,8 +5,8 @@
 class ForwardRenderPass : public RenderPass
 {
 public:
-    ForwardRenderPass();
-    ForwardRenderPass(int drawcallCollectionIndex);
+    ForwardRenderPass(const std::shared_ptr<FramebufferObject> targetFrameBuffer = nullptr);
+    ForwardRenderPass(int drawcallCollectionIndex, const std::shared_ptr<FramebufferObject> targetFrameBuffer = nullptr);
 
     void Render() override;
 

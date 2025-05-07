@@ -133,9 +133,8 @@ void RaymarchingApplication::RenderGUI()
     // Draw GUI for camera controller
     //m_cameraController.DrawGUI(m_imGui);
 
-    if (auto window = m_imGui.UseWindow("Scene parameters"))
+    if (auto window = m_imGui.UseWindow("Raymarch parameters"))
     {
-        // (todo) 10.3: Get the camera view matrix and transform the sphere center and the box matrix
         auto viewTransform = m_cameraController.GetCamera()->GetCamera()->GetViewMatrix();
 
         if (ImGui::TreeNodeEx("Sphere", ImGuiTreeNodeFlags_DefaultOpen))

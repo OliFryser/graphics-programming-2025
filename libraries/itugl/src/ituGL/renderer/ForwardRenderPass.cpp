@@ -5,14 +5,15 @@
 #include <ituGL/geometry/VertexArrayObject.h>
 #include <ituGL/renderer/Renderer.h>
 
-ForwardRenderPass::ForwardRenderPass()
-    : ForwardRenderPass(0)
+ForwardRenderPass::ForwardRenderPass(const std::shared_ptr<FramebufferObject> targetFrameBuffer)
+    : ForwardRenderPass(0, targetFrameBuffer)
 {
 }
 
-ForwardRenderPass::ForwardRenderPass(int drawcallCollectionIndex)
-    : m_drawcallCollectionIndex(drawcallCollectionIndex)
+ForwardRenderPass::ForwardRenderPass(int drawcallCollectionIndex, const std::shared_ptr<FramebufferObject> targetFrameBuffer)
+    : RenderPass(targetFrameBuffer)
 {
+    m_drawcallCollectionIndex = drawcallCollectionIndex;
 }
 
 void ForwardRenderPass::Render()
