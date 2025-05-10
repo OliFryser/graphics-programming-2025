@@ -5,7 +5,9 @@
 #include <ituGL/texture/FramebufferObject.h>
 
 #include <ituGL/renderer/ForwardRenderPass.h>
+#include "FramebufferRenderPass.h"
 #include <ituGL/renderer/SkyboxRenderPass.h>
+#include <ituGL/renderer/PostFXRenderPass.h>
 
 #include <ituGL/scene/Transform.h>
 #include <ituGL/scene/SceneCamera.h>
@@ -28,7 +30,6 @@
 
 #include <imgui.h>
 #include <format>
-#include <ituGL/renderer/PostFXRenderPass.h>
 #include <iostream>
 
 MapApplication::MapApplication()
@@ -111,7 +112,7 @@ void MapApplication::Update()
     // Add the scene nodes to the renderer
     RendererSceneVisitor rendererSceneVisitor(m_renderer);
     m_scene.AcceptVisitor(rendererSceneVisitor);
-    //m_waterScene.AcceptVisitor(rendererSceneVisitor);
+    m_waterScene.AcceptVisitor(rendererSceneVisitor);
 }
 
 void MapApplication::Render()
@@ -399,47 +400,23 @@ void MapApplication::InitializeModels()
 
 void MapApplication::InitializeRenderer()
 {
-    InitializeFramebuffers();
-    m_renderer.AddRenderPass(std::make_unique<ForwardRenderPass>());
+    //InitializeFramebuffers();
+
+    int width, height;
+    GetMainWindow().GetDimensions(width, height);
+
+    std::unique_ptr framebufferRenderPass = std::make_unique<FramebufferRenderPass>(width, height);
+    m_sceneTexture = framebufferRenderPass->GetColorTexture();
+    m_depthTexture = framebufferRenderPass->GetDepthTexture();
+
+    m_renderer.AddRenderPass(std::move(framebufferRenderPass));
     m_renderer.AddRenderPass(std::make_unique<SkyboxRenderPass>(m_skyboxTexture));
     m_renderer.AddRenderPass(std::make_unique<PostFXRenderPass>(m_cloudsMaterial, m_renderer.GetDefaultFramebuffer()));
 }
 
 void MapApplication::InitializeFramebuffers()
 {
-    int width, height;
-    GetMainWindow().GetDimensions(width, height);
 
-    // Scene Texture
-    m_sceneTexture = std::make_shared<Texture2DObject>();
-    m_sceneTexture->Bind();
-    m_sceneTexture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormat::InternalFormatRGBA);
-    m_sceneTexture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_LINEAR);
-    m_sceneTexture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_LINEAR);
-    Texture2DObject::Unbind();
-
-    // Depth texture
-    m_depthTexture = std::make_shared<Texture2DObject>();
-    m_depthTexture->Bind();
-    m_depthTexture->SetImage(0, width, height, TextureObject::FormatDepth, TextureObject::InternalFormat::InternalFormatDepth24);
-    m_depthTexture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_LINEAR);
-    m_depthTexture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_LINEAR);
-    Texture2DObject::Unbind();
-
-    //// Scene framebuffer
-    //m_sceneFramebuffer->Bind();
-    //m_sceneFramebuffer->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Color0, *m_sceneTexture);
-    //m_sceneFramebuffer->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Depth, *m_depthTexture);
-    //m_sceneFramebuffer->SetDrawBuffers(std::array<FramebufferObject::Attachment, 1>
-    //    ({ 
-    //        FramebufferObject::Attachment::Color0,
-    //    })
-    //);
-
-    //if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    //    std::cerr << "The framebuffer is incomplete";
-
-    //FramebufferObject::Unbind();
 }
 
 void MapApplication::InitializeCamera()
