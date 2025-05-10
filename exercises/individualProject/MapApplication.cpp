@@ -29,6 +29,7 @@
 #include <imgui.h>
 #include <format>
 #include <ituGL/renderer/PostFXRenderPass.h>
+#include <iostream>
 
 MapApplication::MapApplication()
     : Application(1024, 1024, "Individual Project")
@@ -399,7 +400,7 @@ void MapApplication::InitializeModels()
 void MapApplication::InitializeRenderer()
 {
     InitializeFramebuffers();
-    m_renderer.AddRenderPass(std::make_unique<ForwardRenderPass>(m_sceneFramebuffer));
+    m_renderer.AddRenderPass(std::make_unique<ForwardRenderPass>());
     m_renderer.AddRenderPass(std::make_unique<SkyboxRenderPass>(m_skyboxTexture));
     m_renderer.AddRenderPass(std::make_unique<PostFXRenderPass>(m_cloudsMaterial, m_renderer.GetDefaultFramebuffer()));
 }
@@ -412,7 +413,7 @@ void MapApplication::InitializeFramebuffers()
     // Scene Texture
     m_sceneTexture = std::make_shared<Texture2DObject>();
     m_sceneTexture->Bind();
-    m_sceneTexture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormat::InternalFormatRGBA16F);
+    m_sceneTexture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormat::InternalFormatRGBA);
     m_sceneTexture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_LINEAR);
     m_sceneTexture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_LINEAR);
     Texture2DObject::Unbind();
@@ -420,21 +421,25 @@ void MapApplication::InitializeFramebuffers()
     // Depth texture
     m_depthTexture = std::make_shared<Texture2DObject>();
     m_depthTexture->Bind();
-    m_depthTexture->SetImage(0, width, height, TextureObject::FormatDepth, TextureObject::InternalFormat::InternalFormatDepth);
+    m_depthTexture->SetImage(0, width, height, TextureObject::FormatDepth, TextureObject::InternalFormat::InternalFormatDepth24);
     m_depthTexture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_LINEAR);
     m_depthTexture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_LINEAR);
     Texture2DObject::Unbind();
 
-    // Scene framebuffer
-    m_sceneFramebuffer->Bind();
-    m_sceneFramebuffer->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Color0, *m_sceneTexture);
+    //// Scene framebuffer
+    //m_sceneFramebuffer->Bind();
+    //m_sceneFramebuffer->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Color0, *m_sceneTexture);
     //m_sceneFramebuffer->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Depth, *m_depthTexture);
-    m_sceneFramebuffer->SetDrawBuffers(std::array<FramebufferObject::Attachment, 1>
-        ({ 
-            FramebufferObject::Attachment::Color0
-        })
-    );
-    FramebufferObject::Unbind();
+    //m_sceneFramebuffer->SetDrawBuffers(std::array<FramebufferObject::Attachment, 1>
+    //    ({ 
+    //        FramebufferObject::Attachment::Color0,
+    //    })
+    //);
+
+    //if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    //    std::cerr << "The framebuffer is incomplete";
+
+    //FramebufferObject::Unbind();
 }
 
 void MapApplication::InitializeCamera()
@@ -648,7 +653,7 @@ std::shared_ptr<Material> MapApplication::CreateRaymarchingMaterial(const char* 
 
     ShaderProgram::Location projMatrixLocation = shaderProgramPtr->GetUniformLocation("ProjMatrix");
     ShaderProgram::Location invProjMatrixLocation = shaderProgramPtr->GetUniformLocation("InvProjMatrix");
-    m_renderer.RegisterShaderProgram(shaderProgramPtr,
+    /*m_renderer.RegisterShaderProgram(shaderProgramPtr,
         [=](const ShaderProgram& shaderProgram, const glm::mat4& worldMatrix, const Camera& camera, bool cameraChanged)
         {
             if (cameraChanged)
@@ -656,11 +661,11 @@ std::shared_ptr<Material> MapApplication::CreateRaymarchingMaterial(const char* 
                 shaderProgram.SetUniform(projMatrixLocation, camera.GetProjectionMatrix());
                 shaderProgram.SetUniform(invProjMatrixLocation, glm::inverse(camera.GetProjectionMatrix()));
             }
-        }, m_renderer.GetDefaultUpdateLightsFunction(*shaderProgramPtr));
+        }, m_renderer.GetDefaultUpdateLightsFunction(*shaderProgramPtr));*/
 
     // Create material
     std::shared_ptr<Material> material = std::make_shared<Material>(shaderProgramPtr);
-    material->SetUniformValue("SourceTexture", sourceTexture);
+    material->SetUniformValue("SourceTexture", m_sceneTexture);
 
     return material;
 }
