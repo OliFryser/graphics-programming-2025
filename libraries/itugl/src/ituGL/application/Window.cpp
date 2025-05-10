@@ -106,3 +106,8 @@ void Window::SetMousePosition(glm::vec2 mousePosition, bool normalized) const
 
     glfwSetCursorPos(m_window, mousePosition.x, mousePosition.y);
 }
+
+void Window::SetWindowSizeChangedCallback(GLFWwindowsizefun callback) 
+{
+    glfwSetWindowSizeCallback(m_window, callback);
+}

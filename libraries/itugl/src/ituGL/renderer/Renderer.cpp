@@ -115,6 +115,14 @@ void Renderer::Render()
     Reset();
 }
 
+void Renderer::UpdateRenderPassFramebuffers(int width, int height)
+{
+    for (auto& pass : m_passes)
+    {
+        pass->UpdateFramebuffers(width, height);
+    }
+}
+
 void Renderer::Reset()
 {
     m_worldMatrices.clear();

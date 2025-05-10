@@ -51,6 +51,16 @@ protected:
     // Release all resources after the main loop
     virtual void Cleanup();
 
+    static void WindowResizeCallback(GLFWwindow* window, int width, int height) {
+        // Retrieve the 'this' pointer from the window user pointer
+        Application* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+        if (app) {
+            app->OnWindowResize(width, height);  // Call the instance method
+        }
+    }
+
+    virtual void OnWindowResize(int width, int height);
+
 protected:
     // End the execution of the application and return the exit code (0 for OK)
     // Optionally provide an error message, if the exit code is not 0

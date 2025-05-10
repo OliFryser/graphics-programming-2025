@@ -14,6 +14,7 @@ public:
     std::shared_ptr<const FramebufferObject> GetTargetFramebuffer() const;
 
     virtual void Render() = 0;
+    virtual void UpdateFramebuffers(int width, int height);
 
 protected:
     Renderer& GetRenderer();

@@ -28,6 +28,7 @@ protected:
     void Update() override;
     void Render() override;
     void Cleanup() override;
+    void OnWindowResize(int width, int height) override;
 
 private:
     void InitializeTextures();
@@ -83,7 +84,7 @@ private:
 
     void CreateTerrainMesh(unsigned int gridX, unsigned int gridY);
 
-    std::shared_ptr<Material> CreateRaymarchingMaterial(const char* fragmentShaderPath, std::shared_ptr<Texture2DObject> sourceTexture = nullptr);
+    std::shared_ptr<Material> CreateRaymarchingMaterial(const char* fragmentShaderPath);
 
 private:
     const int TERRAIN_MESH_COUNT = 4;

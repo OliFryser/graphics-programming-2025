@@ -113,6 +113,8 @@ public:
 
     void Render();
 
+    void UpdateRenderPassFramebuffers(int width, int height);
+
 private:
     void Reset();
 

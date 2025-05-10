@@ -56,9 +56,27 @@ void FramebufferRenderPass::InitializeFramebuffer()
     FramebufferObject::Unbind();
 }
 
+void FramebufferRenderPass::UpdateTextures(int width, int height)
+{
+    m_depthTexture->Bind();
+    m_depthTexture->SetImage(0, width, height, TextureObject::FormatDepth, TextureObject::InternalFormatDepth);
+    m_depthTexture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_NEAREST);
+    m_depthTexture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_NEAREST);
+
+    m_colorTexture->Bind();
+    m_colorTexture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA);
+    m_colorTexture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_NEAREST);
+    m_colorTexture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_NEAREST);
+}
+
 void FramebufferRenderPass::Render()
 {
     Renderer& renderer = GetRenderer();
     renderer.GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
     ForwardRenderPass::Render();
+}
+
+void FramebufferRenderPass::UpdateFramebuffers(int width, int height)
+{
+    UpdateTextures(width, height);
 }

@@ -32,6 +32,8 @@ public:
     // Swaps the front and back buffers of the window
     void SwapBuffers();
 
+    void SetWindowSizeChangedCallback(GLFWwindowsizefun callback);
+
 public:
     // Pressed state of a button or key
     enum class PressedState

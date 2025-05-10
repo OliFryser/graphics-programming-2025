@@ -18,6 +18,10 @@ std::shared_ptr<const FramebufferObject> RenderPass::GetTargetFramebuffer() cons
     return m_targetFramebuffer;
 }
 
+void RenderPass::UpdateFramebuffers(int width, int height)
+{
+}
+
 void RenderPass::SetRenderer(Renderer* renderer)
 {
     m_renderer = renderer;

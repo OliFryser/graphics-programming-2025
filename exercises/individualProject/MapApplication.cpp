@@ -211,6 +211,11 @@ void MapApplication::Cleanup()
     m_imGui.Cleanup();
 }
 
+void MapApplication::OnWindowResize(int width, int height)
+{
+    m_renderer.UpdateRenderPassFramebuffers(width, height);
+}
+
 void MapApplication::InitializeTextures()
 {
     m_defaultTexture = CreateDefaultTexture();
@@ -342,7 +347,7 @@ void MapApplication::InitializeMaterials()
         m_waterMaterial->SetBlendEquation(Material::BlendEquation::Add);
 
     }
-    m_cloudsMaterial = CreateRaymarchingMaterial("shaders/raymarching/cloud.glsl", m_sceneTexture);
+    m_cloudsMaterial = CreateRaymarchingMaterial("shaders/raymarching/cloud.glsl");
 
     m_cloudsMaterial->SetUniformValue("SphereColor", glm::vec3(0.0f, 0.0f, 1.0f));
     m_cloudsMaterial->SetUniformValue("SphereCenter", glm::vec3(-2.0f, 0.0f, -10.0f));
@@ -408,6 +413,9 @@ void MapApplication::InitializeRenderer()
     std::unique_ptr framebufferRenderPass = std::make_unique<FramebufferRenderPass>(width, height);
     m_sceneTexture = framebufferRenderPass->GetColorTexture();
     m_depthTexture = framebufferRenderPass->GetDepthTexture();
+
+    m_cloudsMaterial->SetUniformValue("SourceTexture", m_sceneTexture);
+    m_cloudsMaterial->SetUniformValue("DepthTexture", m_depthTexture);
 
     m_renderer.AddRenderPass(std::move(framebufferRenderPass));
     m_renderer.AddRenderPass(std::make_unique<SkyboxRenderPass>(m_skyboxTexture));
@@ -607,7 +615,7 @@ void MapApplication::CreateTerrainMesh(unsigned int gridX, unsigned int gridY)
         vertexFormat.LayoutBegin(static_cast<int>(vertices.size()), true /* interleaved */), vertexFormat.LayoutEnd());
 }
 
-std::shared_ptr<Material> MapApplication::CreateRaymarchingMaterial(const char* fragmentShaderPath, std::shared_ptr<Texture2DObject> sourceTexture)
+std::shared_ptr<Material> MapApplication::CreateRaymarchingMaterial(const char* fragmentShaderPath)
 {
     // We could keep this vertex shader and reuse it, but it looks simpler this way
     std::vector<const char*> vertexShaderPaths;
@@ -620,9 +628,9 @@ std::shared_ptr<Material> MapApplication::CreateRaymarchingMaterial(const char* 
     fragmentShaderPaths.push_back("shaders/utils.glsl");
     fragmentShaderPaths.push_back("shaders/raymarching/sdflibrary.glsl");
     fragmentShaderPaths.push_back("shaders/raymarching/raymarcher.glsl");
-    fragmentShaderPaths.push_back("shaders/raymarching/copy.frag");
-    //fragmentShaderPaths.push_back(fragmentShaderPath);
-    //fragmentShaderPaths.push_back("shaders/raymarching/raymarching.frag");
+    //fragmentShaderPaths.push_back("shaders/raymarching/copy.frag");
+    fragmentShaderPaths.push_back(fragmentShaderPath);
+    fragmentShaderPaths.push_back("shaders/raymarching/raymarching.frag");
     Shader fragmentShader = ShaderLoader(Shader::FragmentShader).Load(fragmentShaderPaths);
 
     std::shared_ptr<ShaderProgram> shaderProgramPtr = std::make_shared<ShaderProgram>();
@@ -630,7 +638,7 @@ std::shared_ptr<Material> MapApplication::CreateRaymarchingMaterial(const char* 
 
     ShaderProgram::Location projMatrixLocation = shaderProgramPtr->GetUniformLocation("ProjMatrix");
     ShaderProgram::Location invProjMatrixLocation = shaderProgramPtr->GetUniformLocation("InvProjMatrix");
-    /*m_renderer.RegisterShaderProgram(shaderProgramPtr,
+    m_renderer.RegisterShaderProgram(shaderProgramPtr,
         [=](const ShaderProgram& shaderProgram, const glm::mat4& worldMatrix, const Camera& camera, bool cameraChanged)
         {
             if (cameraChanged)
@@ -638,11 +646,10 @@ std::shared_ptr<Material> MapApplication::CreateRaymarchingMaterial(const char* 
                 shaderProgram.SetUniform(projMatrixLocation, camera.GetProjectionMatrix());
                 shaderProgram.SetUniform(invProjMatrixLocation, glm::inverse(camera.GetProjectionMatrix()));
             }
-        }, m_renderer.GetDefaultUpdateLightsFunction(*shaderProgramPtr));*/
+        }, m_renderer.GetDefaultUpdateLightsFunction(*shaderProgramPtr));
 
     // Create material
     std::shared_ptr<Material> material = std::make_shared<Material>(shaderProgramPtr);
-    material->SetUniformValue("SourceTexture", m_sceneTexture);
 
     return material;
 }

@@ -26,6 +26,11 @@ Application::Application(int width, int height, const char* title)
         Terminate(-2, "Failed to initialize OpenGL with GLAD");
         return;
     }
+    
+    // store a reference to this class in the window user pointer
+    glfwSetWindowUserPointer(m_mainWindow.GetInternalWindow(), this);
+
+    m_mainWindow.SetWindowSizeChangedCallback(Application::WindowResizeCallback);
 }
 
 Application::~Application()
@@ -87,6 +92,10 @@ void Application::Render()
 }
 
 void Application::Cleanup()
+{
+}
+
+void Application::OnWindowResize(int width, int height)
 {
 }
 
