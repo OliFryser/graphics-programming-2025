@@ -8,8 +8,6 @@ out vec4 FragColor;
 uniform mat4 ProjMatrix;
 uniform mat4 InvProjMatrix;
 
-uniform sampler2D SourceTexture;
-
 // Implement GetDistance based on version with output
 float GetDistance(vec3 p)
 {
@@ -49,9 +47,8 @@ void main()
 	GetDistance(point, o);
 
 	// With the output value, get the final color
-	//FragColor = GetOutputColor(point, distance, o);
-	FragColor = texture(SourceTexture, TexCoord);
+	FragColor = GetOutputColor(point, distance, o);
 
-	// Convert linear depth to normalized depth (same as projecting the point and taking the Z/W)
-	gl_FragDepth = -ProjMatrix[2][2] - ProjMatrix[3][2] / point.z;
+	vec4 clip = ProjMatrix * vec4(point, 1.0);
+	gl_FragDepth = clip.z / clip.w * 0.5 + 0.5;
 }

@@ -26,6 +26,7 @@ protected:
     void Initialize() override;
     void InitializeLights();
     void Update() override;
+    void UpdateRaymarchMaterial(const Camera& camera);
     void Render() override;
     void Cleanup() override;
     void OnWindowResize(int width, int height) override;
@@ -37,7 +38,6 @@ private:
     void InitializeModels();
     void InitializeCamera();
     void InitializeRenderer();
-    void InitializeFramebuffers();
 
     void RenderGui();
 
@@ -85,6 +85,7 @@ private:
     void CreateTerrainMesh(unsigned int gridX, unsigned int gridY);
 
     std::shared_ptr<Material> CreateRaymarchingMaterial(const char* fragmentShaderPath);
+    std::shared_ptr<Material> CreatePostFXMaterial(const char* fragmentShaderPath, std::shared_ptr<Texture2DObject> sourceTexture = nullptr);
 
 private:
     const int TERRAIN_MESH_COUNT = 4;
@@ -125,7 +126,7 @@ private:
     std::shared_ptr<Texture2DObject> m_waterTexture;
 
     // Framebuffers
-    std::shared_ptr<FramebufferObject> m_sceneFramebuffer;
+    std::shared_ptr<const FramebufferObject> m_sceneFramebuffer;
     std::shared_ptr<Texture2DObject> m_depthTexture;
     std::shared_ptr<Texture2DObject> m_sceneTexture;
 

@@ -29,10 +29,8 @@ float GetDistance(vec3 p, inout Output o)
 
 	float blend;
 
-	// TODO 10.2 : Replace Union with SmoothUnion and try different small values of smoothness
 	float d = SmoothUnion(dSphere, dBox, Smoothness, blend);
 
-	// TODO 10.2 : Replace this with a mix, using the blend factor from SmoothUnion
 	o.color = mix(SphereColor, BoxColor, blend);
 
 	return d;
@@ -41,7 +39,7 @@ float GetDistance(vec3 p, inout Output o)
 // Default value for o
 void InitOutput(out Output o)
 {
-	o.color = vec3(0.0f);
+	o.color = vec3(0.0);
 }
 
 // Output function: Just a dot with the normal and view vectors
