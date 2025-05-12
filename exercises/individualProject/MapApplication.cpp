@@ -45,6 +45,7 @@ MapApplication::MapApplication()
     , m_levels(10)
     , m_quantizeTerrain(true)
     , m_smoothness(.5f)
+    , m_depthBias(.01f)
 {
 }
 
@@ -125,6 +126,8 @@ void MapApplication::UpdateRaymarchMaterial(const Camera& camera)
     m_cloudsMaterial->SetUniformValue("LightDirection", m_directionalLight->GetDirection());
     m_cloudsMaterial->SetUniformValue("LightColor", m_directionalLight->GetColor());
     m_cloudsMaterial->SetUniformValue("Smoothness", m_smoothness);
+    m_cloudsMaterial->SetUniformValue("DepthBias", m_depthBias);
+    m_cloudsMaterial->SetUniformValue("Time", GetCurrentTime());
 }
 
 void MapApplication::Render()
@@ -217,6 +220,7 @@ void MapApplication::DrawRaymarchGui()
         if (ImGui::TreeNodeEx("Raymarching", ImGuiTreeNodeFlags_DefaultOpen))
         {
             ImGui::DragFloat("Smoothness", &m_smoothness, .01f, .0f, 1.0f);
+            ImGui::DragFloat("Depth bias", &m_depthBias, .005f, .0f, 1.0f);
             ImGui::TreePop();
         }
     }
@@ -243,13 +247,19 @@ void MapApplication::InitializeTextures()
         }
     }
 
-    m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("models/skybox/BlueSkyCubeMapLQ.png", TextureObject::FormatRGB, TextureObject::InternalFormatSRGB8);
+    m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("models/skybox/BlueSkyCubeMapLQ.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
 
     m_dirtTexture = LoadTexture("textures/dirt.png");
     m_grassTexture = LoadTexture("textures/grass.jpg");
     m_rockTexture = LoadTexture("textures/rock.jpg");
     m_snowTexture = LoadTexture("textures/snow.jpg");
     m_waterTexture = LoadTexture("textures/water.png");
+
+    m_noiseTexture = LoadTexture("textures/noise2");
+    m_noiseTexture->SetParameter(Texture2DObject::ParameterEnum::WrapS, GL_REPEAT);
+    m_noiseTexture->SetParameter(Texture2DObject::ParameterEnum::WrapT, GL_REPEAT);
+    m_noiseTexture->SetParameter(Texture2DObject::ParameterEnum::MinFilter, GL_NEAREST);
+    m_noiseTexture->SetParameter(Texture2DObject::ParameterEnum::MagFilter, GL_NEAREST);
 }
 
 void MapApplication::InitializeMaterials()
@@ -430,6 +440,7 @@ void MapApplication::InitializeRenderer()
     m_cloudsMaterial->SetUniformValue("SphereRadius", 1.25f);
     m_cloudsMaterial->SetUniformValue("BoxColor", glm::vec3(1.0f, 0.0f, .0f));
     m_cloudsMaterial->SetUniformValue("BoxSize", glm::vec3(1.0f, 1.0f, 1.0f));
+    m_cloudsMaterial->SetUniformValue("NoiseTexture", m_noiseTexture);
 
     copyMaterial->SetUniformValue("DepthTexture", m_depthTexture);
 
@@ -491,7 +502,7 @@ std::shared_ptr<Texture2DObject> MapApplication::LoadTexture(const char* path)
     unsigned char* data = stbi_load(path, &width, &height, &components, 4);
 
     texture->Bind();
-    texture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatSRGBA8, std::span<const unsigned char>(data, width * height * 4));
+    texture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, std::span<const unsigned char>(data, width * height * 4));
 
     texture->GenerateMipmap();
 

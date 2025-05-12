@@ -120,7 +120,8 @@ private:
     bool m_quantizeTerrain;
 
     // Raymarching
-    float m_smoothness;
+    float m_smoothness, m_depthBias;
+    std::shared_ptr<Texture2DObject> m_noiseTexture;
 
     std::shared_ptr<Mesh> m_terrainPatch;
     std::vector<std::shared_ptr<Material>> m_terrainMaterials;
