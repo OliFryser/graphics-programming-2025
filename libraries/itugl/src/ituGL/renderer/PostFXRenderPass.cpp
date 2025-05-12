@@ -15,9 +15,6 @@ void PostFXRenderPass::Render()
 
     assert(m_material);
     m_material->Use();
-    bool wasSRGB = renderer.GetDevice().IsFeatureEnabled(GL_FRAMEBUFFER_SRGB);
-    renderer.GetDevice().SetFeatureEnabled(GL_FRAMEBUFFER_SRGB, false);
     const Mesh* mesh = &renderer.GetFullscreenMesh();
     mesh->DrawSubmesh(0);
-    renderer.GetDevice().SetFeatureEnabled(GL_FRAMEBUFFER_SRGB, wasSRGB);
 }

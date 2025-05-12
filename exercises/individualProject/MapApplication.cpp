@@ -16,7 +16,6 @@
 #include <ituGL/scene/RendererSceneVisitor.h>
 #include <ituGL/scene/ImGuiSceneVisitor.h>
 
-#include <ituGL/lighting/DirectionalLight.h>
 
 #include <ituGL/geometry/VertexFormat.h>
 #include <ituGL/geometry/Model.h>
@@ -78,10 +77,10 @@ void MapApplication::Initialize()
 void MapApplication::InitializeLights()
 {
     // Create a directional light and add it to the scene
-    std::shared_ptr<DirectionalLight> directionalLight = std::make_shared<DirectionalLight>();
-    directionalLight->SetDirection(glm::vec3(-0.3f, -1.0f, -0.3f)); // It will be normalized inside the function
-    directionalLight->SetIntensity(1.0f);
-    auto sceneLight = std::make_shared<SceneLight>("directional light", directionalLight);
+    m_directionalLight = std::make_shared<DirectionalLight>();
+    m_directionalLight->SetDirection(glm::vec3(-0.3f, -1.0f, -0.3f)); // It will be normalized inside the function
+    m_directionalLight->SetIntensity(1.0f);
+    auto sceneLight = std::make_shared<SceneLight>("directional light", m_directionalLight);
     m_scene.AddSceneNode(sceneLight);
 }
 
@@ -140,10 +139,11 @@ void MapApplication::RenderGui()
 {
     m_imGui.BeginFrame();
     
-    if (auto window = m_imGui.UseWindow("Lighting Controls"))
+    if (auto window = m_imGui.UseWindow("Performance Info"))
     {
-        ImGui::ColorEdit3("Ambient Color", &m_ambientColor[0]);
+        ImGui::Text("FPS: %.2f", 1.0f / GetDeltaTime());
     }
+
 
     if (auto window = m_imGui.UseWindow("Terrain Options"))
     {
@@ -153,7 +153,8 @@ void MapApplication::RenderGui()
 
         ImGui::DragFloat("Water Level", &m_waterLevel, .05f, 0.0f);
         ImGui::Checkbox("Quantize Terrain", &m_quantizeTerrain);
-        
+
+        ImGui::ColorEdit3("Ambient Color", &m_ambientColor[0]);
     }
 
     // Draw GUI for scene nodes, using the visitor pattern
@@ -179,7 +180,7 @@ void MapApplication::DrawRaymarchGui()
         {
             static glm::vec3 sphereCenter(glm::vec3(-2.0f, 4.0f, 0.0f));
 
-            ImGui::ColorEdit3("Sphere Color", m_cloudsMaterial->GetDataUniformPointer<float>("SphereColor"));
+            //ImGui::ColorEdit3("Sphere Color", m_cloudsMaterial->GetDataUniformPointer<float>("SphereColor"));
             ImGui::DragFloat3("Sphere Center", &sphereCenter.x, .1f);
             auto transformedPosition = (viewTransform * glm::vec4(sphereCenter, 1.0));
             m_cloudsMaterial->SetUniformValue("SphereCenter", glm::vec3(transformedPosition.x, transformedPosition.y, transformedPosition.z));
@@ -192,7 +193,7 @@ void MapApplication::DrawRaymarchGui()
             static glm::vec3 translation(2.0f, 4.0f, 0.0f);
             static glm::vec3 rotation(0.0f);
 
-            ImGui::ColorEdit3("Box Color", m_cloudsMaterial->GetDataUniformPointer<float>("BoxColor"));
+            //ImGui::ColorEdit3("Box Color", m_cloudsMaterial->GetDataUniformPointer<float>("BoxColor"));
             ImGui::DragFloat3("Box Translation", &translation.x, .1f);
             ImGui::DragFloat3("Box rotation", &rotation.x, .1f);
 
@@ -326,6 +327,7 @@ void MapApplication::InitializeMaterials()
         waterShaderProgram->Build(waterVS, waterFS);
 
         ShaderProgram::Location waterViewProjMatrixLocation = waterShaderProgram->GetUniformLocation("ViewProjMatrix");
+        ShaderProgram::Location waterCameraPositionLocation = waterShaderProgram->GetUniformLocation("CameraPosition");
         ShaderProgram::Location waterLocationWorldMatrix = waterShaderProgram->GetUniformLocation("WorldMatrix");
         // Register shader with renderer
         m_renderer.RegisterShaderProgram(waterShaderProgram,
@@ -334,6 +336,7 @@ void MapApplication::InitializeMaterials()
                 if (cameraChanged)
                 {
                     shaderProgram.SetUniform(waterViewProjMatrixLocation, camera.GetViewProjectionMatrix());
+                    shaderProgram.SetUniform(waterCameraPositionLocation, camera.ExtractTranslation());
                 }
                 shaderProgram.SetUniform(waterLocationWorldMatrix, worldMatrix);
             },
@@ -404,7 +407,6 @@ void MapApplication::InitializeModels()
 
 void MapApplication::InitializeRenderer()
 {
-
     int width, height;
     GetMainWindow().GetDimensions(width, height);
 
@@ -483,7 +485,7 @@ std::shared_ptr<Texture2DObject> MapApplication::LoadTexture(const char* path)
     unsigned char* data = stbi_load(path, &width, &height, &components, 4);
 
     texture->Bind();
-    texture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, std::span<const unsigned char>(data, width * height * 4));
+    texture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatSRGBA8, std::span<const unsigned char>(data, width * height * 4));
 
     texture->GenerateMipmap();
 
@@ -639,20 +641,10 @@ std::shared_ptr<Material> MapApplication::CreateRaymarchingMaterial(const char* 
     std::shared_ptr<ShaderProgram> shaderProgramPtr = std::make_shared<ShaderProgram>();
     shaderProgramPtr->Build(vertexShader, fragmentShader);
 
-    ShaderProgram::Location projMatrixLocation = shaderProgramPtr->GetUniformLocation("ProjMatrix");
-    ShaderProgram::Location invProjMatrixLocation = shaderProgramPtr->GetUniformLocation("InvProjMatrix");
-    m_renderer.RegisterShaderProgram(shaderProgramPtr,
-        [=](const ShaderProgram& shaderProgram, const glm::mat4& worldMatrix, const Camera& camera, bool cameraChanged)
-        {
-            if (cameraChanged)
-            {
-                shaderProgram.SetUniform(projMatrixLocation, camera.GetProjectionMatrix());
-                shaderProgram.SetUniform(invProjMatrixLocation, glm::inverse(camera.GetProjectionMatrix()));
-            }
-        }, m_renderer.GetDefaultUpdateLightsFunction(*shaderProgramPtr));
-
     // Create material
     std::shared_ptr<Material> material = std::make_shared<Material>(shaderProgramPtr);
+    material->SetBlendParams(Material::BlendParam::SourceAlpha, Material::BlendParam::OneMinusSourceAlpha);
+    material->SetBlendEquation(Material::BlendEquation::Add);
 
     return material;
 }
@@ -679,4 +671,18 @@ std::shared_ptr<Material> MapApplication::CreatePostFXMaterial(const char* fragm
     material->SetUniformValue("SourceTexture", sourceTexture);
 
     return material;
+}
+
+void MapApplication::PrintMatrix(glm::mat4 matrix, std::string name)
+{
+    std::cout << "Printing " << name << ":" << std::endl;
+    PrintVector(matrix[0]);
+    PrintVector(matrix[1]);
+    PrintVector(matrix[2]);
+    PrintVector(matrix[3]);
+}
+
+void MapApplication::PrintVector(glm::vec4 vector)
+{
+    std::cout << vector[0] << ", " << vector[1] << ", " << vector[2] << ", " << vector[3] << std::endl;
 }

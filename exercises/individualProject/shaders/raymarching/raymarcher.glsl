@@ -2,9 +2,11 @@
 // Forward declare distance function
 float GetDistance(vec3 p);
 
-// Forward declare config function
-void GetRayMarcherConfig(out uint maxSteps, out float maxDistance, out float surfaceDistance);
+// Forward declare sample density function
+float SampleDensity(vec3 p);
 
+// Forward declare config function
+void GetRayMarcherConfig(out uint maxSteps, out float maxDistance, out float marchSize, out float surfaceDistance);
 
 // Ray marching algorithm
 float RayMarch(vec3 origin, vec3 dir)
@@ -13,8 +15,8 @@ float RayMarch(vec3 origin, vec3 dir)
 
     // Get configuration specific to this shader pass
     uint maxSteps;
-    float maxDistance, surfaceDistance;
-    GetRayMarcherConfig(maxSteps, maxDistance, surfaceDistance);
+    float maxDistance, marchSize, surfaceDistance;
+    GetRayMarcherConfig(maxSteps, maxDistance, marchSize, surfaceDistance);
 
     // Iterate until maxSteps is reached or we find a point
     for(uint i = 0u; i < maxSteps; ++i)
@@ -34,6 +36,37 @@ float RayMarch(vec3 origin, vec3 dir)
     }
 
     return distance;
+}
+
+// Volumetric raymarching inspired by https://blog.maximeheckel.com/posts/real-time-cloudscapes-with-volumetric-raymarching/
+vec4 VolumetricRaymarch(vec3 origin, vec3 dir)
+{
+    float depth = 0.0;
+    vec3 p = origin + dir * depth;
+    vec4 res = vec4(0.0);
+
+    // Get configuration specific to this shader pass
+    uint maxSteps;
+    float maxDistance, marchSize, surfaceDistance;
+    GetRayMarcherConfig(maxSteps, maxDistance, marchSize, surfaceDistance);
+
+    // Iterate until maxSteps is reached or we find a point
+    for(uint i = 0u; i < maxSteps; ++i)
+    {
+        float density = SampleDensity(p);
+
+        // we only draw the density if it's greater than 0;
+        if (density > 0.0) {
+            vec4 color = vec4(mix(vec3(1.0, 1.0, 1.0), vec3(0.0, 0.0, 0.0), density), density);
+            color.rgb *= color.a;
+            res += color * (1.0 - res.a);
+        }
+
+        depth += marchSize;
+        p = origin + dir * depth;
+    }
+
+    return res;
 }
 
 uniform int RaymarchHack;

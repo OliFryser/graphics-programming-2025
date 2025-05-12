@@ -17,7 +17,6 @@ struct Output
 	vec3 color;
 };
 
-
 // Signed distance function
 float GetDistance(vec3 p, inout Output o)
 {
@@ -34,6 +33,13 @@ float GetDistance(vec3 p, inout Output o)
 	o.color = mix(SphereColor, BoxColor, blend);
 
 	return d;
+}
+
+float SampleDensity(vec3 p)
+{
+	// o is not used
+	Output o;
+	return -GetDistance(p, o);
 }
 
 // Default value for o

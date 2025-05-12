@@ -10,6 +10,7 @@
 #include <ituGL/utils/DearImGui.h>
 #include <ituGL/camera/Camera.h>
 #include <ituGL/shader/Material.h>
+#include <ituGL/lighting/DirectionalLight.h>
 
 #include <glm/mat4x4.hpp>
 #include <vector>
@@ -87,6 +88,9 @@ private:
     std::shared_ptr<Material> CreateRaymarchingMaterial(const char* fragmentShaderPath);
     std::shared_ptr<Material> CreatePostFXMaterial(const char* fragmentShaderPath, std::shared_ptr<Texture2DObject> sourceTexture = nullptr);
 
+    void PrintMatrix(glm::mat4 matrix, std::string name = "");
+    void PrintVector(glm::vec4 vector);
+
 private:
     const int TERRAIN_MESH_COUNT = 4;
 
@@ -105,6 +109,8 @@ private:
 
     // Camera controller
     CameraController m_cameraController;
+
+    std::shared_ptr<DirectionalLight> m_directionalLight;
 
     glm::vec3 m_ambientColor;
 

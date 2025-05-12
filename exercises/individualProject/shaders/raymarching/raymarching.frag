@@ -16,10 +16,11 @@ float GetDistance(vec3 p)
 }
 
 // Configure ray marcher
-void GetRayMarcherConfig(out uint maxSteps, out float maxDistance, out float surfaceDistance)
+void GetRayMarcherConfig(out uint maxSteps, out float maxDistance, out float marchSize, out float surfaceDistance)
 {
-    maxSteps = 100u;
+    maxSteps = 1000u;
     maxDistance = ProjMatrix[3][2] / (ProjMatrix[2][2] + 1.0f); // Far plane
+	marchSize = 0.08;
     surfaceDistance = 0.001f;
 }
 
@@ -44,10 +45,12 @@ void main()
 	// Invoke GetDistance again to get the output value
 	Output o;
 	InitOutput(o);
-	GetDistance(point, o);
+	vec4 color = VolumetricRaymarch(origin, dir);
+	o.color = color.rgb;//GetDistance(point, o);
 
 	// With the output value, get the final color
-	FragColor = GetOutputColor(point, distance, o);
+	FragColor = color;
+	//GetOutputColor(point, distance, o);
 
 	vec4 clip = ProjMatrix * vec4(point, 1.0);
 	gl_FragDepth = clip.z / clip.w * 0.5 + 0.5;
