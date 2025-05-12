@@ -139,9 +139,11 @@ void MapApplication::RenderGui()
 {
     m_imGui.BeginFrame();
     
-    if (auto window = m_imGui.UseWindow("Performance Info"))
+    if (auto window = m_imGui.UseWindow("Performance Options"))
     {
         ImGui::Text("FPS: %.2f", 1.0f / GetDeltaTime());
+        ImGui::SliderFloat("March size", m_cloudsMaterial->GetDataUniformPointer<float>("MarchSize"), .02f, 1.0f);
+        ImGui::SliderInt("Max steps", (int *) (m_cloudsMaterial->GetDataUniformPointer<unsigned int>("MaxSteps")), 0, 1000);
     }
 
 
@@ -204,12 +206,7 @@ void MapApplication::DrawRaymarchGui()
 
             m_cloudsMaterial->SetUniformValue("BoxMatrix", viewTransform * boxTransform);
 
-            ImGui::DragFloat("Box Size", m_cloudsMaterial->GetDataUniformPointer<float>("BoxSize"), .1f);
-            ImGui::TreePop();
-        }
-        if (ImGui::TreeNodeEx("Ray Marching", ImGuiTreeNodeFlags_DefaultOpen))
-        {
-            ImGui::DragFloat("Smoothness", m_cloudsMaterial->GetDataUniformPointer<float>("Smoothness"), .01f);
+            ImGui::DragFloat3("Box Size", m_cloudsMaterial->GetDataUniformPointer<float>("BoxSize"), .1f);
             ImGui::TreePop();
         }
     }
@@ -423,7 +420,6 @@ void MapApplication::InitializeRenderer()
     m_cloudsMaterial->SetUniformValue("SphereRadius", 1.25f);
     m_cloudsMaterial->SetUniformValue("BoxColor", glm::vec3(1.0f, 0.0f, .0f));
     m_cloudsMaterial->SetUniformValue("BoxSize", glm::vec3(1.0f, 1.0f, 1.0f));
-    m_cloudsMaterial->SetUniformValue("Smoothness", .5f);
 
     copyMaterial->SetUniformValue("DepthTexture", m_depthTexture);
 
@@ -645,6 +641,8 @@ std::shared_ptr<Material> MapApplication::CreateRaymarchingMaterial(const char* 
     std::shared_ptr<Material> material = std::make_shared<Material>(shaderProgramPtr);
     material->SetBlendParams(Material::BlendParam::SourceAlpha, Material::BlendParam::OneMinusSourceAlpha);
     material->SetBlendEquation(Material::BlendEquation::Add);
+    material->SetUniformValue("MarchSize", 0.08f);
+    material->SetUniformValue("MaxSteps", 1000u);
 
     return material;
 }

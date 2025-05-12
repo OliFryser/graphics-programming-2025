@@ -41,7 +41,7 @@ float RayMarch(vec3 origin, vec3 dir)
 // Volumetric raymarching inspired by https://blog.maximeheckel.com/posts/real-time-cloudscapes-with-volumetric-raymarching/
 vec4 VolumetricRaymarch(vec3 origin, vec3 dir)
 {
-    float depth = 0.0;
+    float depth = 0.1;
     vec3 p = origin + dir * depth;
     vec4 res = vec4(0.0);
 
