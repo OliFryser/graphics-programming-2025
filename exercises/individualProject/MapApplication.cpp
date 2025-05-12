@@ -44,6 +44,7 @@ MapApplication::MapApplication()
     , m_waterLevel(2.5f)
     , m_levels(10)
     , m_quantizeTerrain(true)
+    , m_smoothness(.5f)
 {
 }
 
@@ -118,8 +119,12 @@ void MapApplication::Update()
 
 void MapApplication::UpdateRaymarchMaterial(const Camera& camera)
 {
+    m_cloudsMaterial->SetUniformValue("ViewMatrix", camera.GetViewMatrix());
     m_cloudsMaterial->SetUniformValue("ProjMatrix", camera.GetProjectionMatrix());
     m_cloudsMaterial->SetUniformValue("InvProjMatrix", glm::inverse(camera.GetProjectionMatrix()));
+    m_cloudsMaterial->SetUniformValue("LightDirection", m_directionalLight->GetDirection());
+    m_cloudsMaterial->SetUniformValue("LightColor", m_directionalLight->GetColor());
+    m_cloudsMaterial->SetUniformValue("Smoothness", m_smoothness);
 }
 
 void MapApplication::Render()
@@ -138,12 +143,12 @@ void MapApplication::Render()
 void MapApplication::RenderGui()
 {
     m_imGui.BeginFrame();
-    
+
     if (auto window = m_imGui.UseWindow("Performance Options"))
     {
         ImGui::Text("FPS: %.2f", 1.0f / GetDeltaTime());
         ImGui::SliderFloat("March size", m_cloudsMaterial->GetDataUniformPointer<float>("MarchSize"), .02f, 1.0f);
-        ImGui::SliderInt("Max steps", (int *) (m_cloudsMaterial->GetDataUniformPointer<unsigned int>("MaxSteps")), 0, 1000);
+        ImGui::SliderInt("Max steps", (int*)(m_cloudsMaterial->GetDataUniformPointer<unsigned int>("MaxSteps")), 0, 1000);
     }
 
 
@@ -163,7 +168,7 @@ void MapApplication::RenderGui()
     ImGuiSceneVisitor imGuiVisitor(m_imGui, "Scene");
     m_scene.AcceptVisitor(imGuiVisitor);
     m_waterScene.AcceptVisitor(imGuiVisitor);
-    
+
     // Draw GUI for camera controller
     m_cameraController.DrawGUI(m_imGui);
 
@@ -207,6 +212,11 @@ void MapApplication::DrawRaymarchGui()
             m_cloudsMaterial->SetUniformValue("BoxMatrix", viewTransform * boxTransform);
 
             ImGui::DragFloat3("Box Size", m_cloudsMaterial->GetDataUniformPointer<float>("BoxSize"), .1f);
+            ImGui::TreePop();
+        }
+        if (ImGui::TreeNodeEx("Raymarching", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            ImGui::DragFloat("Smoothness", &m_smoothness, .01f, .0f, 1.0f);
             ImGui::TreePop();
         }
     }

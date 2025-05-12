@@ -119,6 +119,9 @@ private:
     int m_levels;
     bool m_quantizeTerrain;
 
+    // Raymarching
+    float m_smoothness;
+
     std::shared_ptr<Mesh> m_terrainPatch;
     std::vector<std::shared_ptr<Material>> m_terrainMaterials;
     std::shared_ptr<Material> m_waterMaterial;

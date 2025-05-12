@@ -39,11 +39,13 @@ float RayMarch(vec3 origin, vec3 dir)
 }
 
 // Volumetric raymarching inspired by https://blog.maximeheckel.com/posts/real-time-cloudscapes-with-volumetric-raymarching/
-vec4 VolumetricRaymarch(vec3 origin, vec3 dir)
+vec4 VolumetricRaymarch(vec3 origin, vec3 dir, vec3 lightDir, vec3 lightColor)
 {
     float depth = 0.1;
     vec3 p = origin + dir * depth;
     vec4 res = vec4(0.0);
+
+    float delta = 0.3;
 
     // Get configuration specific to this shader pass
     uint maxSteps;
@@ -57,10 +59,19 @@ vec4 VolumetricRaymarch(vec3 origin, vec3 dir)
 
         // we only draw the density if it's greater than 0;
         if (density > 0.0) {
+            // directional derivative
+            float diffuse = clamp((SampleDensity(p) - SampleDensity(p + delta * -lightDir)) / delta, 0.0, 1.0);
+
+            vec3 lin = vec3(0.60,0.60,0.75) * 1.1 + 0.8 * lightColor * diffuse;
             vec4 color = vec4(mix(vec3(1.0, 1.0, 1.0), vec3(0.0, 0.0, 0.0), density), density);
+            color.rgb *= lin;
+
             color.rgb *= color.a;
             res += color * (1.0 - res.a);
         }
+
+        if (res.a >= 0.99)
+            break;
 
         depth += marchSize;
         p = origin + dir * depth;

@@ -28,8 +28,7 @@ float GetDistance(vec3 p, inout Output o)
 
 	float blend;
 
-	//float d = SmoothUnion(dSphere, dBox, Smoothness, blend);
-	float d = Substraction(dBox, dSphere);
+	float d = SmoothSubtraction(dSphere, dBox, Smoothness);
 
 	o.color = mix(SphereColor, BoxColor, blend);
 

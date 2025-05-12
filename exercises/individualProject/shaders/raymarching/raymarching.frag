@@ -6,7 +6,10 @@ out vec4 FragColor;
 
 //Uniforms
 uniform mat4 ProjMatrix;
+uniform mat4 ViewMatrix;
 uniform mat4 InvProjMatrix;
+uniform vec3 LightDirection;
+uniform vec3 LightColor;
 
 // Implement GetDistance based on version with output
 float GetDistance(vec3 p)
@@ -44,9 +47,9 @@ void main()
 
 	// Hit point in view space is given by the direction from the camera and the distance
 	vec3 point = dir * distance;
-
+	vec3 lightDir = normalize((ViewMatrix * vec4(LightDirection, 0.0)).xyz);
 	// Invoke GetDistance again to get the output value
-	vec4 color = VolumetricRaymarch(origin, dir);
+	vec4 color = VolumetricRaymarch(origin, dir, lightDir, LightColor);
 
 	// With the output value, get the final color
 	FragColor = color;
