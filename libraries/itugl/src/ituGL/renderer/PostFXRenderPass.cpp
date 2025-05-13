@@ -19,8 +19,11 @@ void PostFXRenderPass::Render()
     
     bool wasSRGB = renderer.GetDevice().IsFeatureEnabled(GL_FRAMEBUFFER_SRGB);
     renderer.GetDevice().SetFeatureEnabled(GL_FRAMEBUFFER_SRGB, false);
+    bool wasDepthTesting = renderer.GetDevice().IsFeatureEnabled(GL_DEPTH_TEST);
+    renderer.GetDevice().SetFeatureEnabled(GL_DEPTH_TEST, false);
 
     mesh->DrawSubmesh(0);
 
+    renderer.GetDevice().SetFeatureEnabled(GL_DEPTH_TEST, wasDepthTesting);
     renderer.GetDevice().SetFeatureEnabled(GL_FRAMEBUFFER_SRGB, wasSRGB);
 }

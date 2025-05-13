@@ -444,6 +444,7 @@ void MapApplication::InitializeRenderer()
     m_cloudsMaterial->SetUniformValue("BoxColor", glm::vec3(1.0f, 0.0f, .0f));
     m_cloudsMaterial->SetUniformValue("BoxSize", glm::vec3(1.0f, 1.0f, 1.0f));
     m_cloudsMaterial->SetUniformValue("NoiseTexture", m_noiseTexture);
+    m_cloudsMaterial->SetUniformValue("DepthTexture", m_depthTexture);
 
     m_renderer.AddRenderPass(std::move(framebufferRenderPass));
     m_renderer.AddRenderPass(std::make_unique<SkyboxRenderPass>(m_skyboxTexture));

@@ -6,7 +6,8 @@ float GetDistance(vec3 p);
 float SampleDensity(vec3 p);
 
 // Forward declare config function
-void GetRayMarcherConfig(out uint maxSteps, out float maxDistance, out float marchSize, out float surfaceDistance);
+void GetRayMarcherConfig(out uint maxSteps, out float maxDistance, out float surfaceDistance);
+void GetVolumetricMarcherConfig(out uint maxSteps, out float marchSize, out vec3 lightColor, out vec3 volumeColor);
 
 // Ray marching algorithm
 float RayMarch(vec3 origin, vec3 dir)
@@ -15,8 +16,8 @@ float RayMarch(vec3 origin, vec3 dir)
 
     // Get configuration specific to this shader pass
     uint maxSteps;
-    float maxDistance, marchSize, surfaceDistance;
-    GetRayMarcherConfig(maxSteps, maxDistance, marchSize, surfaceDistance);
+    float maxDistance, surfaceDistance;
+    GetRayMarcherConfig(maxSteps, maxDistance, surfaceDistance);
 
     // Iterate until maxSteps is reached or we find a point
     for(uint i = 0u; i < maxSteps; ++i)
@@ -47,10 +48,9 @@ struct Output {
 };
 
 // Volumetric raymarching inspired by https://blog.maximeheckel.com/posts/real-time-cloudscapes-with-volumetric-raymarching/
-void VolumetricRaymarch(vec3 origin, vec3 dir, vec3 lightDir, vec3 lightColor, vec3 volumeColor, inout Output o)
+void VolumetricRaymarch(vec3 origin, vec3 dir, vec3 lightDir, float maxDistance, inout Output o)
 {
     float depth = 0.0;
-    vec3 p = origin + dir * depth;
     float delta = 0.3;
 
     vec4 res = vec4(0.0);
@@ -60,14 +60,19 @@ void VolumetricRaymarch(vec3 origin, vec3 dir, vec3 lightDir, vec3 lightColor, v
 
     // Get configuration specific to this shader pass
     uint maxSteps;
-    float maxDistance, marchSize, surfaceDistance;
-    GetRayMarcherConfig(maxSteps, maxDistance, marchSize, surfaceDistance);
+    float marchSize;
+    vec3 lightColor, volumeColor;
+    GetVolumetricMarcherConfig(maxSteps, marchSize, lightColor, volumeColor);
 
     // Iterate until maxSteps is reached or we find a point
     for (uint i = 0u; i < maxSteps; ++i)
     {
-        float density = SampleDensity(p);
+        vec3 p = origin + dir * depth;
 
+        if (-p.z > maxDistance)
+            break;
+
+        float density = SampleDensity(p);
         // we only draw the density if it's greater than 0;
         if (density > 0.0) {
             // directional derivative
@@ -86,7 +91,6 @@ void VolumetricRaymarch(vec3 origin, vec3 dir, vec3 lightDir, vec3 lightColor, v
         }
 
         depth += marchSize;
-        p = origin + dir * depth;
     }
     o.color = res;
     o.distance = distance;

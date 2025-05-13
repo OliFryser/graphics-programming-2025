@@ -50,7 +50,7 @@ float GetDistance(vec3 p)
 	// Box with worldView transform "BoxMatrix" and dimensions "BoxSize"
 	float dBox = BoxSDF(TransformToLocalPoint(p, BoxMatrix), BoxSize);
 
-	float debugSphere = SphereSDF(TransformToLocalPoint(p, SphereCenter), 1.0);
+	float debugSphere = SphereSDF(TransformToLocalPoint(p, SphereCenter), 0.0);
 
 	float fog = SmoothSubtraction(dSphere, dBox, Smoothness);
 
