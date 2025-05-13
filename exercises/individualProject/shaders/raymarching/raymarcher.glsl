@@ -47,7 +47,7 @@ struct Output {
 };
 
 // Volumetric raymarching inspired by https://blog.maximeheckel.com/posts/real-time-cloudscapes-with-volumetric-raymarching/
-void VolumetricRaymarch(vec3 origin, vec3 dir, vec3 lightDir, vec3 lightColor, inout Output o)
+void VolumetricRaymarch(vec3 origin, vec3 dir, vec3 lightDir, vec3 lightColor, vec3 volumeColor, inout Output o)
 {
     float depth = 0.0;
     vec3 p = origin + dir * depth;
@@ -73,7 +73,7 @@ void VolumetricRaymarch(vec3 origin, vec3 dir, vec3 lightDir, vec3 lightColor, i
             // directional derivative
             float diffuse = clamp((SampleDensity(p) - SampleDensity(p + delta * -lightDir)) / delta, 0.0, 1.0);
 
-            vec3 lin = vec3(0.60,0.60,0.75) * 1.1 + 0.8 * lightColor * diffuse;
+            vec3 lin = volumeColor * 1.1 + 0.8 * lightColor * diffuse;
             vec4 color = vec4(mix(vec3(1.0, 1.0, 1.0), vec3(0.0, 0.0, 0.0), density), density);
             color.rgb *= lin;
 

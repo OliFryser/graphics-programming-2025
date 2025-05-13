@@ -121,6 +121,7 @@ private:
 
     // Raymarching
     float m_smoothness, m_depthBias;
+    glm::vec3 m_cloudColor;
     std::shared_ptr<Texture2DObject> m_noiseTexture;
 
     std::shared_ptr<Mesh> m_terrainPatch;

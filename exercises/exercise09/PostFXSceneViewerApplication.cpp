@@ -325,7 +325,7 @@ void PostFXSceneViewerApplication::InitializeRenderer()
     m_renderer.AddRenderPass(std::make_unique<SkyboxRenderPass>(m_skyboxTexture));
 
     // Create a copy pass from m_sceneTexture to the first temporary texture
-    std::shared_ptr<Material> copyMaterial = CreatePostFXMaterial("shaders/postfx/copy.frag", m_sceneTexture);
+    std::shared_ptr<Material> copyMaterial = Createrial("shaders/postfx/copy.frag", m_sceneTexture);
     m_renderer.AddRenderPass(std::make_unique<PostFXRenderPass>(copyMaterial, m_blurBuffers[0]));
 
     // (todo) 09.4: Replace the copy pass with a new bloom pass

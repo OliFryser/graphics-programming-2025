@@ -10,7 +10,9 @@ uniform mat4 ViewMatrix;
 uniform mat4 InvProjMatrix;
 uniform vec3 LightDirection;
 uniform vec3 LightColor;
+uniform vec3 CloudColor;
 uniform float DepthBias;
+
 
 uniform uint MaxSteps;
 uniform float MarchSize;
@@ -40,7 +42,7 @@ void main()
 	
 	Output o;
 	// Use Volumetric Raymarching to sample the color
-	VolumetricRaymarch(origin, dir, lightDir, LightColor, o);
+	VolumetricRaymarch(origin, dir, lightDir, LightColor, CloudColor, o);
 	// With the output value, get the final color
 	FragColor = o.color;
 

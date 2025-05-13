@@ -46,6 +46,7 @@ MapApplication::MapApplication()
     , m_quantizeTerrain(true)
     , m_smoothness(.5f)
     , m_depthBias(.01f)
+    , m_cloudColor(0.60, 0.60, 0.75)
 {
 }
 
@@ -128,6 +129,7 @@ void MapApplication::UpdateRaymarchMaterial(const Camera& camera)
     m_cloudsMaterial->SetUniformValue("Smoothness", m_smoothness);
     m_cloudsMaterial->SetUniformValue("DepthBias", m_depthBias);
     m_cloudsMaterial->SetUniformValue("Time", GetCurrentTime());
+    m_cloudsMaterial->SetUniformValue("CloudColor", m_cloudColor);
 }
 
 void MapApplication::Render()
@@ -221,6 +223,7 @@ void MapApplication::DrawRaymarchGui()
         {
             ImGui::DragFloat("Smoothness", &m_smoothness, .01f, .0f, 1.0f);
             ImGui::DragFloat("Depth bias", &m_depthBias, .005f, .0f, 1.0f);
+            ImGui::ColorEdit3("Cloud Color", &m_cloudColor.x);
             ImGui::TreePop();
         }
     }
@@ -441,8 +444,6 @@ void MapApplication::InitializeRenderer()
     m_cloudsMaterial->SetUniformValue("BoxColor", glm::vec3(1.0f, 0.0f, .0f));
     m_cloudsMaterial->SetUniformValue("BoxSize", glm::vec3(1.0f, 1.0f, 1.0f));
     m_cloudsMaterial->SetUniformValue("NoiseTexture", m_noiseTexture);
-
-    copyMaterial->SetUniformValue("DepthTexture", m_depthTexture);
 
     m_renderer.AddRenderPass(std::move(framebufferRenderPass));
     m_renderer.AddRenderPass(std::make_unique<SkyboxRenderPass>(m_skyboxTexture));
