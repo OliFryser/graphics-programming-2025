@@ -1,3 +1,6 @@
+//Inputs
+in vec2 TexCoord;
+
 // Uniforms
 uniform vec3 SphereColor;
 uniform vec3 SphereCenter;
@@ -9,36 +12,15 @@ uniform vec3 BoxSize;
 
 uniform float Smoothness;
 
-uniform sampler2D NoiseTexture;
+uniform sampler3D NoiseTexture;
 uniform float Time;
+uniform mat4 InvViewMatrix;
+uniform float NoiseStrength;
+uniform float CloudDensity;
 
-float Noise(vec3 x ) {
-  vec3 p = floor(x);
-  vec3 f = fract(x);
-  f = f*f*(3.0-2.0*f);
-
-  vec2 uv = (p.xy+vec2(37.0,239.0)*p.z) + f.xy;
-  vec2 tex = textureLod(NoiseTexture, (uv+0.5)/256.0, 0.0).yx;
-
-  return mix( tex.x, tex.y, f.z ) * 2.0 - 1.0;
-}
-
-float FBM(vec3 p) {
-  vec3 q = p + Time * 0.5 * vec3(1.0, -0.2, -1.0);
-  float g = Noise(q);
-
-  float f = 0.0;
-  float scale = 0.5;
-  float factor = 2.02;
-
-  for (int i = 0; i < 6; i++) {
-      f += scale * Noise(q);
-      q *= factor;
-      factor += 0.21;
-      scale *= 0.5;
-  }
-
-  return f;
+float Noise(vec3 p) {
+	vec3 worldP = (InvViewMatrix * vec4(p, 1.0)).xyz;
+	return texture(NoiseTexture, worldP).r * 2.0 - 1.0;
 }
 
 // Signed distance function
@@ -50,18 +32,14 @@ float GetDistance(vec3 p)
 	// Box with worldView transform "BoxMatrix" and dimensions "BoxSize"
 	float dBox = BoxSDF(TransformToLocalPoint(p, BoxMatrix), BoxSize);
 
-	float debugSphere = SphereSDF(TransformToLocalPoint(p, SphereCenter), 0.0);
-
-	float fog = SmoothSubtraction(dSphere, dBox, Smoothness);
-
-	float d = SmoothUnion(debugSphere, fog, Smoothness);
+	float d = SmoothSubtraction(dSphere, dBox, Smoothness);
 
 	return d;
 }
 
 float SampleDensity(vec3 p)
 {
-	//float f = FBM(p);
-	return -GetDistance(p);
+    float sdf = GetDistance(p);
+	float noise = Noise(p) * NoiseStrength;
+	return (-sdf + noise) * CloudDensity;
 }
-

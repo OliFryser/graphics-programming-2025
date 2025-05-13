@@ -16,6 +16,7 @@
 #include <vector>
 
 class Texture2DObject;
+class Texture3DObject;
 class TextureCubemapObject;
 
 class MapApplication : public Application
@@ -91,6 +92,8 @@ private:
     void PrintMatrix(glm::mat4 matrix, std::string name = "");
     void PrintVector(glm::vec4 vector);
 
+    void CreateCloudNoise();
+
 private:
     const int TERRAIN_MESH_COUNT = 4;
 
@@ -118,11 +121,11 @@ private:
     float m_waterLevel;
     int m_levels;
     bool m_quantizeTerrain;
+    std::shared_ptr<Texture3DObject> m_cloudNoise;
 
     // Raymarching
-    float m_smoothness, m_depthBias;
+    float m_smoothness;
     glm::vec3 m_cloudColor;
-    std::shared_ptr<Texture2DObject> m_noiseTexture;
 
     std::shared_ptr<Mesh> m_terrainPatch;
     std::vector<std::shared_ptr<Material>> m_terrainMaterials;
@@ -142,7 +145,6 @@ private:
     std::shared_ptr<Texture2DObject> m_sceneTexture;
 
     std::vector<std::shared_ptr<Texture2DObject>> m_heightMaps;
-    std::vector<std::shared_ptr<Texture2DObject>> m_normalMaps;
 
     std::shared_ptr<TextureCubemapObject> m_skyboxTexture;
 };

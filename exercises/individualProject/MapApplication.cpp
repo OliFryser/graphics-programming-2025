@@ -2,6 +2,7 @@
 
 #include <ituGL/asset/TextureCubemapLoader.h>
 #include <ituGL/texture/Texture2DObject.h>
+#include <ituGL/texture/Texture3DObject.h>
 #include <ituGL/texture/FramebufferObject.h>
 
 #include <ituGL/renderer/ForwardRenderPass.h>
@@ -34,19 +35,18 @@
 MapApplication::MapApplication()
     : Application(1024, 1024, "Individual Project")
     , m_gridX(128), m_gridY(128)
-    , m_gridWidth(2), m_gridHeight(2)
+    , m_gridWidth(4), m_gridHeight(4)
     , m_vertexShaderLoader(Shader::Type::VertexShader)
     , m_fragmentShaderLoader(Shader::Type::FragmentShader)
     , m_renderer(GetDevice())
     , m_ambientColor(.25f)
-    , m_heightScale(.5f)
-    , m_smoothingAmount(0.35f)
-    , m_waterLevel(2.5f)
+    , m_heightScale(.7f)
+    , m_smoothingAmount(0.845f)
+    , m_waterLevel(3.2f)
     , m_levels(10)
     , m_quantizeTerrain(true)
-    , m_smoothness(.5f)
-    , m_depthBias(.01f)
-    , m_cloudColor(0.60, 0.60, 0.75)
+    , m_smoothness(.8f)
+    , m_cloudColor(0.68, 0.68, 0.68)
 {
 }
 
@@ -81,9 +81,10 @@ void MapApplication::InitializeLights()
 {
     // Create a directional light and add it to the scene
     m_directionalLight = std::make_shared<DirectionalLight>();
-    m_directionalLight->SetDirection(glm::vec3(-0.3f, -1.0f, -0.3f)); // It will be normalized inside the function
+    m_directionalLight->SetDirection(glm::vec3(-0.4f, -1.0f, -0.3f)); // It will be normalized inside the function
     m_directionalLight->SetIntensity(1.0f);
-    auto sceneLight = std::make_shared<SceneLight>("directional light", m_directionalLight);
+    m_directionalLight->SetColor(glm::vec3(1.0f, 0.785f, 0.696f));
+    auto sceneLight = std::make_shared<SceneLight>("Directional light", m_directionalLight);
     m_scene.AddSceneNode(sceneLight);
 }
 
@@ -122,12 +123,12 @@ void MapApplication::Update()
 void MapApplication::UpdateRaymarchMaterial(const Camera& camera)
 {
     m_cloudsMaterial->SetUniformValue("ViewMatrix", camera.GetViewMatrix());
+    m_cloudsMaterial->SetUniformValue("InvViewMatrix", glm::inverse(camera.GetViewMatrix()));
     m_cloudsMaterial->SetUniformValue("ProjMatrix", camera.GetProjectionMatrix());
     m_cloudsMaterial->SetUniformValue("InvProjMatrix", glm::inverse(camera.GetProjectionMatrix()));
     m_cloudsMaterial->SetUniformValue("LightDirection", m_directionalLight->GetDirection());
     m_cloudsMaterial->SetUniformValue("LightColor", m_directionalLight->GetColor());
     m_cloudsMaterial->SetUniformValue("Smoothness", m_smoothness);
-    m_cloudsMaterial->SetUniformValue("DepthBias", m_depthBias);
     m_cloudsMaterial->SetUniformValue("Time", GetCurrentTime());
     m_cloudsMaterial->SetUniformValue("CloudColor", m_cloudColor);
 }
@@ -190,7 +191,7 @@ void MapApplication::DrawRaymarchGui()
 
         if (ImGui::TreeNodeEx("Sphere", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            static glm::vec3 sphereCenter(glm::vec3(-2.0f, 4.0f, 0.0f));
+            static glm::vec3 sphereCenter(glm::vec3(-7.0f, 4.8f, -10.0f));
 
             //ImGui::ColorEdit3("Sphere Color", m_cloudsMaterial->GetDataUniformPointer<float>("SphereColor"));
             ImGui::DragFloat3("Sphere Center", &sphereCenter.x, .1f);
@@ -221,9 +222,10 @@ void MapApplication::DrawRaymarchGui()
         }
         if (ImGui::TreeNodeEx("Raymarching", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            ImGui::DragFloat("Smoothness", &m_smoothness, .01f, .0f, 1.0f);
-            ImGui::DragFloat("Depth bias", &m_depthBias, .005f, .0f, 1.0f);
             ImGui::ColorEdit3("Cloud Color", &m_cloudColor.x);
+            ImGui::DragFloat("Smoothness", &m_smoothness, .01f, .0f, 1.0f);
+            ImGui::DragFloat("Noise strength", m_cloudsMaterial->GetDataUniformPointer<float>("NoiseStrength"), .1f);
+            ImGui::DragFloat("Cloud Density", m_cloudsMaterial->GetDataUniformPointer<float>("CloudDensity"), .1f);
             ImGui::TreePop();
         }
     }
@@ -258,11 +260,7 @@ void MapApplication::InitializeTextures()
     m_snowTexture = LoadTexture("textures/snow.jpg");
     m_waterTexture = LoadTexture("textures/water.png");
 
-    m_noiseTexture = LoadTexture("textures/noise2");
-    m_noiseTexture->SetParameter(Texture2DObject::ParameterEnum::WrapS, GL_REPEAT);
-    m_noiseTexture->SetParameter(Texture2DObject::ParameterEnum::WrapT, GL_REPEAT);
-    m_noiseTexture->SetParameter(Texture2DObject::ParameterEnum::MinFilter, GL_NEAREST);
-    m_noiseTexture->SetParameter(Texture2DObject::ParameterEnum::MagFilter, GL_NEAREST);
+    CreateCloudNoise();
 }
 
 void MapApplication::InitializeMaterials()
@@ -327,11 +325,9 @@ void MapApplication::InitializeMaterials()
             std::shared_ptr<Material> material = std::make_shared<Material>(*m_terrainMaterials[0]);
             m_terrainMaterials.push_back(material);
             m_terrainMaterials[i]->SetUniformValue("Heightmap", m_heightMaps[i]);
-            m_terrainMaterials[i]->SetUniformValue("NormalMap", m_normalMaps[i]);
         }
 
         m_terrainMaterials[0]->SetUniformValue("Heightmap", m_heightMaps[0]);
-        m_terrainMaterials[0]->SetUniformValue("NormalMap", m_normalMaps[0]);
     }
     {
         // water material
@@ -440,11 +436,13 @@ void MapApplication::InitializeRenderer()
 
     // Init raymarching values
     m_cloudsMaterial->SetUniformValue("SphereColor", glm::vec3(0.0f, 0.0f, 1.0f));
-    m_cloudsMaterial->SetUniformValue("SphereRadius", 1.25f);
+    m_cloudsMaterial->SetUniformValue("SphereRadius", 3.0f);
     m_cloudsMaterial->SetUniformValue("BoxColor", glm::vec3(1.0f, 0.0f, .0f));
-    m_cloudsMaterial->SetUniformValue("BoxSize", glm::vec3(1.0f, 1.0f, 1.0f));
-    m_cloudsMaterial->SetUniformValue("NoiseTexture", m_noiseTexture);
+    m_cloudsMaterial->SetUniformValue("BoxSize", glm::vec3(100.0f, 1.7f, 1000.0f));
+    m_cloudsMaterial->SetUniformValue("NoiseTexture", m_cloudNoise);
     m_cloudsMaterial->SetUniformValue("DepthTexture", m_depthTexture);
+    m_cloudsMaterial->SetUniformValue("NoiseStrength", .2f);
+    m_cloudsMaterial->SetUniformValue("CloudDensity", .3f);
 
     m_renderer.AddRenderPass(std::move(framebufferRenderPass));
     m_renderer.AddRenderPass(std::make_unique<SkyboxRenderPass>(m_skyboxTexture));
@@ -456,7 +454,7 @@ void MapApplication::InitializeCamera()
 {
     // Create the main camera
     std::shared_ptr<Camera> camera = std::make_shared<Camera>();
-    camera->SetViewMatrix(glm::vec3(10.0f, 10.0f, 10.0f), glm::vec3(0.0f, 0.0f, -1.0), glm::vec3(0.0f, 1.0f, 0.0));
+    camera->SetViewMatrix(glm::vec3(-9.0f, 8.0f, -4.0f), glm::vec3(-6.5f, 5, -10.0f), glm::vec3(0.0f, 1.0f, 0.0));
     float fov = 1.0f;
     camera->SetPerspectiveProjectionMatrix(fov, GetMainWindow().GetAspectRatio(), 0.1f, 100.0f);
 
@@ -530,36 +528,6 @@ void MapApplication::CreateHeightMap(unsigned int width, unsigned int height, gl
             pixels.push_back(height);
         }
     }
-
-    std::vector<float> normals;
-    std::shared_ptr<Texture2DObject> normalMap = std::make_shared<Texture2DObject>();
-
-    for (unsigned int y = 0; y < height; ++y)
-    {
-        for (unsigned int x = 0; x < width; ++x)
-        {
-            int columns = width;
-            
-            float heightL = x == 0 ? pixels[y * columns + x] : pixels[y * columns + x - 1];
-            float heightR = x == width - 1? pixels[y * columns + x] : pixels[y * columns + x + 1];
-            float heightD = y == 0 ? pixels[y * columns + x] : pixels[(y - 1) * columns + x];
-            float heightU = y == height - 1 ? pixels[y * columns + x] : pixels[(y + 1) * columns + x];
-            
-            auto dx = glm::vec3(1, 0, (heightR - heightL) / 2.0);
-            auto dz = glm::vec3(0, 1, (heightU - heightD) / 2.0);
-
-            auto normal = glm::normalize(glm::cross(dz, dx));
-            normals.push_back(normal.x);
-            normals.push_back(normal.y);
-            normals.push_back(normal.z);
-        }
-    }
-
-    normalMap->Bind();
-    normalMap->SetImage<float>(0, width, height, TextureObject::FormatRGB, TextureObject::InternalFormatRGB8, normals);
-    normalMap->GenerateMipmap();
-    m_normalMaps.push_back(normalMap);
-    Texture2DObject::Unbind();
     
     heightmap->Bind();
     heightmap->SetImage<float>(0, width, height, TextureObject::FormatR, TextureObject::InternalFormatR16F, pixels);
@@ -665,7 +633,7 @@ std::shared_ptr<Material> MapApplication::CreateRaymarchingMaterial(const char* 
     material->SetBlendParams(Material::BlendParam::SourceAlpha, Material::BlendParam::OneMinusSourceAlpha);
     material->SetBlendEquation(Material::BlendEquation::Add);
     material->SetUniformValue("MarchSize", 0.08f);
-    material->SetUniformValue("MaxSteps", 1000u);
+    material->SetUniformValue("MaxSteps", 300u);
 
     return material;
 }
@@ -706,4 +674,41 @@ void MapApplication::PrintMatrix(glm::mat4 matrix, std::string name)
 void MapApplication::PrintVector(glm::vec4 vector)
 {
     std::cout << vector[0] << ", " << vector[1] << ", " << vector[2] << ", " << vector[3] << std::endl;
+}
+
+void MapApplication::CreateCloudNoise()
+{
+    m_cloudNoise = std::make_shared<Texture3DObject>();
+
+    const int HEIGHT = 128;
+    const int WIDTH = 128;
+    const int DEPTH = 128;
+    float scale = 4.0f;
+
+    std::vector<float> pixels(HEIGHT * WIDTH * DEPTH);
+    for (unsigned int j = 0; j < HEIGHT; ++j)
+    {
+        for (unsigned int i = 0; i < WIDTH; ++i)
+        {
+            for (unsigned int k = 0; k < DEPTH; ++k)
+            {
+                float x = i / static_cast<float>(WIDTH - 1);
+                float y = j / static_cast<float>(HEIGHT - 1);
+                float z = k / static_cast<float>(DEPTH - 1);
+
+                float noise = stb_perlin_fbm_noise3(x * scale, y * scale, z * scale, 2.0f, .5f, 6) * .5f + .5f;
+
+                pixels[i + j * WIDTH + k * WIDTH * HEIGHT] = (noise + 1.0f) * .5f;
+            }
+        }
+    }
+
+    m_cloudNoise->Bind();
+    m_cloudNoise->SetImage<float>(0, WIDTH, HEIGHT, DEPTH, TextureObject::FormatR, TextureObject::InternalFormatR16F, pixels);
+    m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapS, GL_REPEAT);
+    m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapT, GL_REPEAT);
+    m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapR, GL_REPEAT);
+    m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::MinFilter, GL_LINEAR);
+    m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::MagFilter, GL_LINEAR);
+    Texture2DObject::Unbind();
 }

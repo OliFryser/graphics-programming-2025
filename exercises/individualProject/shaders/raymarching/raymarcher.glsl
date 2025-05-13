@@ -44,7 +44,6 @@ float RayMarch(vec3 origin, vec3 dir)
 
 struct Output {
     vec4 color;
-    float distance;
 };
 
 // Volumetric raymarching inspired by https://blog.maximeheckel.com/posts/real-time-cloudscapes-with-volumetric-raymarching/
@@ -69,7 +68,7 @@ void VolumetricRaymarch(vec3 origin, vec3 dir, vec3 lightDir, float maxDistance,
     {
         vec3 p = origin + dir * depth;
 
-        if (-p.z > maxDistance)
+        if (depth > maxDistance)
             break;
 
         float density = SampleDensity(p);
@@ -84,16 +83,11 @@ void VolumetricRaymarch(vec3 origin, vec3 dir, vec3 lightDir, float maxDistance,
 
             color.rgb *= color.a;
             res += color * (1.0 - res.a);
-
-            if (distance < 0.0 && res.a > 0.01) {
-                distance = depth; // First visible impact
-            }
         }
 
         depth += marchSize;
     }
     o.color = res;
-    o.distance = distance;
 }
 
 uniform int RaymarchHack;

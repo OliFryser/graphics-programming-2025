@@ -10,7 +10,6 @@ out vec2 TexCoord;
 out float Height;
 
 uniform sampler2D Heightmap;
-uniform sampler2D NormalMap;
 
 uniform mat4 WorldMatrix;
 uniform mat4 ViewProjMatrix;

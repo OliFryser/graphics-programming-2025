@@ -1,6 +1,3 @@
-//Inputs
-in vec2 TexCoord;
-
 //Outputs
 out vec4 FragColor;
 
@@ -40,6 +37,14 @@ float LinearizeDepth(float z, float near, float far)
     return (2.0 * near * far) / (far + near - ndc * (far - near));
 }
 
+float GetSceneDepthInLength(float sceneDepth)
+{
+	vec4 ndc = vec4(TexCoord * 2.0 - 1.0, sceneDepth * 2.0 - 1.0, 1.0);
+	vec4 viewPos = InvProjMatrix * ndc;
+	viewPos /= viewPos.w;
+	return length(viewPos.xyz);
+}
+
 void main()
 {
 	// TODO: Pass these as uniforms
@@ -52,7 +57,7 @@ void main()
 	// Initial distance to camera
 	float distance = length(origin);
 	float sceneDepth = texture(DepthTexture, TexCoord).r;
-	sceneDepth = LinearizeDepth(sceneDepth, near, far);
+	sceneDepth = GetSceneDepthInLength(sceneDepth);
 
 	// Normalize to get view direction
 	vec3 dir = origin / distance;
@@ -64,13 +69,4 @@ void main()
 	VolumetricRaymarch(origin, dir, lightDir, sceneDepth, o);
 	// With the output value, get the final color
 	FragColor = o.color;
-
-//	// Use regular raymarching to get the distance for the depth buffer
-//	distance += RayMarch(origin, dir);
-//
-//	// Hit point in view space is given by the direction from the camera and the distance
-//	float depth = o.distance - DepthBias;
-//	vec3 point = dir * distance;
-//	vec4 clip = ProjMatrix * vec4(point, 1.0);
-//	gl_FragDepth = clip.z / clip.w * 0.5 + 0.5;
 }
