@@ -47,9 +47,10 @@ MapApplication::MapApplication()
     , m_smoothness(.8f)
     , m_cloudColor(0.68, 0.68, 0.68)
     , m_sphereCenter(-7.0f, 4.8f, -10.0f)
-    , m_boxTranslation(2.0f, 4.0f, 0.0f)
+    , m_boxTranslation(2.0f, 3.6f, 0.0f)
     , m_boxRotation(0.0f)
     , m_frame(0)
+    , m_maxRenderDistance(30.0f)
 {
 }
 
@@ -136,6 +137,7 @@ void MapApplication::UpdateRaymarchMaterial(const Camera& camera)
     m_cloudsMaterial->SetUniformValue("Time", GetCurrentTime());
     m_cloudsMaterial->SetUniformValue("Frame", m_frame);
     m_cloudsMaterial->SetUniformValue("CloudColor", m_cloudColor);
+    m_cloudsMaterial->SetUniformValue("MaxRenderDistance", m_maxRenderDistance);
 
     const auto& viewTransform = camera.GetViewMatrix();
     
@@ -172,6 +174,8 @@ void MapApplication::RenderGui()
         ImGui::Text("FPS: %.2f", 1.0f / GetDeltaTime());
         ImGui::SliderFloat("March size", m_cloudsMaterial->GetDataUniformPointer<float>("MarchSize"), .02f, 1.0f);
         ImGui::SliderInt("Max steps", (int*)(m_cloudsMaterial->GetDataUniformPointer<unsigned int>("MaxSteps")), 0, 1000);
+        ImGui::DragFloat("Max Render Distance", &m_maxRenderDistance, 1.0f);
+        ImGui::SliderFloat("Safe step distance", m_cloudsMaterial->GetDataUniformPointer<float>("MaxSafeStep"), 0.0f, 100.0f);
     }
 
 
@@ -224,6 +228,7 @@ void MapApplication::DrawRaymarchGui()
             ImGui::ColorEdit3("Cloud Color", &m_cloudColor.x);
             ImGui::DragFloat("Smoothness", &m_smoothness, .01f, .0f, 1.0f);
             ImGui::DragFloat("Noise strength", m_cloudsMaterial->GetDataUniformPointer<float>("NoiseStrength"), .1f);
+            ImGui::DragFloat("Noise scale", m_cloudsMaterial->GetDataUniformPointer<float>("NoiseScale"), .01f);
             ImGui::DragFloat("Cloud Density", m_cloudsMaterial->GetDataUniformPointer<float>("CloudDensity"), .1f);
             ImGui::TreePop();
         }
@@ -446,8 +451,12 @@ void MapApplication::InitializeRenderer()
     m_cloudsMaterial->SetUniformValue("NoiseTexture", m_cloudNoise);
     m_cloudsMaterial->SetUniformValue("DepthTexture", m_depthTexture);
     m_cloudsMaterial->SetUniformValue("BlueNoiseTexture", m_blueNoiseTexture);
-    m_cloudsMaterial->SetUniformValue("NoiseStrength", .2f);
-    m_cloudsMaterial->SetUniformValue("CloudDensity", .3f);
+    m_cloudsMaterial->SetUniformValue("NoiseStrength", .8f);
+    m_cloudsMaterial->SetUniformValue("NoiseScale", .1f);
+    m_cloudsMaterial->SetUniformValue("CloudDensity", .5f);
+    m_cloudsMaterial->SetUniformValue("MarchSize", 0.3f);
+    m_cloudsMaterial->SetUniformValue("MaxSteps", 100u);
+    m_cloudsMaterial->SetUniformValue("MaxSafeStep", 5.0f);
 
     m_renderer.AddRenderPass(std::move(framebufferRenderPass));
     m_renderer.AddRenderPass(std::make_unique<SkyboxRenderPass>(m_skyboxTexture));
@@ -637,8 +646,6 @@ std::shared_ptr<Material> MapApplication::CreateRaymarchingMaterial(const char* 
     std::shared_ptr<Material> material = std::make_shared<Material>(shaderProgramPtr);
     material->SetBlendParams(Material::BlendParam::SourceAlpha, Material::BlendParam::OneMinusSourceAlpha);
     material->SetBlendEquation(Material::BlendEquation::Add);
-    material->SetUniformValue("MarchSize", 0.08f);
-    material->SetUniformValue("MaxSteps", 300u);
 
     return material;
 }
@@ -710,9 +717,9 @@ void MapApplication::CreateCloudNoise()
 
     m_cloudNoise->Bind();
     m_cloudNoise->SetImage<float>(0, WIDTH, HEIGHT, DEPTH, TextureObject::FormatR, TextureObject::InternalFormatR, pixels);
-    m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapS, GL_REPEAT);
-    m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapT, GL_REPEAT);
-    m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapR, GL_REPEAT);
+    m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapS, GL_MIRRORED_REPEAT);
+    m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapT, GL_MIRRORED_REPEAT);
+    m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapR, GL_MIRRORED_REPEAT);
     m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::MinFilter, GL_LINEAR);
     m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::MagFilter, GL_LINEAR);
     Texture2DObject::Unbind();

@@ -13,11 +13,30 @@ uniform sampler3D NoiseTexture;
 uniform float Time;
 uniform mat4 InvViewMatrix;
 uniform float NoiseStrength;
+uniform float NoiseScale;
 uniform float CloudDensity;
 
-float Noise(vec3 p) {
-	vec3 worldP = (InvViewMatrix * vec4(p, 1.0)).xyz;
+float Noise(vec3 worldP) {
 	return texture(NoiseTexture, worldP).r * 2.0 - 1.0;
+}
+
+float FBM(vec3 worldP)
+{
+    float total = 0.0;
+    float amplitude = 1.0;
+    float frequency = 1.0;
+
+    float lacunarity = 2.0;
+    float gain = 0.5;
+    
+    for (int i = 0; i < 4; ++i)
+    {
+        total += Noise(worldP * frequency) * amplitude;
+        frequency *= lacunarity;
+        amplitude *= gain;
+    }
+
+    return total;
 }
 
 // Signed distance function
@@ -36,7 +55,11 @@ float GetDistance(vec3 p)
 
 float SampleDensity(vec3 p)
 {
+    vec3 worldP = (InvViewMatrix * vec4(p, 1.0)).xyz;
+
     float sdf = GetDistance(p);
-	float noise = Noise(p) * NoiseStrength;
-	return (-sdf + noise) * CloudDensity;
+    float fbm = FBM(worldP * NoiseScale);
+    float noise = (fbm * 0.5 + 0.5) * NoiseStrength;
+
+    return (-sdf + noise) * CloudDensity;
 }

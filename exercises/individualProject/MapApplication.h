@@ -125,7 +125,7 @@ private:
     bool m_quantizeTerrain;
 
     // Raymarching
-    float m_smoothness;
+    float m_smoothness, m_maxRenderDistance;
     glm::vec3 m_cloudColor;
     std::shared_ptr<Texture3DObject> m_cloudNoise;
     std::shared_ptr<Texture2DObject> m_blueNoiseTexture;

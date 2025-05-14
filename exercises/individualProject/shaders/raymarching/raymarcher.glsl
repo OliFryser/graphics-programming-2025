@@ -7,7 +7,7 @@ float SampleDensity(vec3 p);
 
 // Forward declare config function
 void GetRayMarcherConfig(out uint maxSteps, out float maxDistance, out float surfaceDistance);
-void GetVolumetricMarcherConfig(out uint maxSteps, out float marchSize, out vec3 lightColor, out vec3 volumeColor);
+void GetVolumetricMarcherConfig(out uint maxSteps, out float marchSize, out float maxSafeStep, out vec3 lightColor, out vec3 volumeColor);
 
 // Ray marching algorithm
 float RayMarch(vec3 origin, vec3 dir)
@@ -58,9 +58,9 @@ void VolumetricRaymarch(vec3 origin, vec3 dir, vec3 lightDir, float maxDistance,
 
     // Get configuration specific to this shader pass
     uint maxSteps;
-    float marchSize;
+    float marchSize, maxSafeStep;
     vec3 lightColor, volumeColor;
-    GetVolumetricMarcherConfig(maxSteps, marchSize, lightColor, volumeColor);
+    GetVolumetricMarcherConfig(maxSteps, marchSize, maxSafeStep, lightColor, volumeColor);
 
     float depth = marchSize * offset;
 
@@ -72,6 +72,15 @@ void VolumetricRaymarch(vec3 origin, vec3 dir, vec3 lightDir, float maxDistance,
         if (depth > maxDistance)
             break;
 
+        // if we are outside the sdf, step forward a safe distance aided raymarching to get closer 
+        float sdf = GetDistance(p);
+        if (sdf > maxSafeStep)
+        {
+            float step = maxSafeStep;
+            depth += step;
+            continue;
+        }
+        
         float density = SampleDensity(p);
         // we only draw the density if it's greater than 0;
         if (density > 0.0) {
@@ -84,6 +93,10 @@ void VolumetricRaymarch(vec3 origin, vec3 dir, vec3 lightDir, float maxDistance,
 
             color.rgb *= color.a;
             res += color * (1.0 - res.a);
+
+            // If volume is almost opaque, break;
+            if (res.a > 0.99)
+                break;
         }
 
         depth += marchSize;
