@@ -15,8 +15,6 @@ uniform mat4 WorldMatrix;
 uniform mat4 ViewProjMatrix;
 
 uniform int TerrainWidth;
-uniform int ChunkRows;
-uniform int ChunkColumns;
 uniform bool QuantizeTerrain;
 
 uniform int Levels;
@@ -29,17 +27,15 @@ float QuantizeHeight(float height)
 	float base = level / Levels;
 	float above = (level + 1.0) / Levels;
 
-	// get the fractional part (how close we are to the next plateau)
+	// get how close we are to the next plateau
 	float t = height * Levels - (level - 1.0);
 
-	// Smooth transition
-	float smoothT = smoothstep(0.0, SmoothingAmount, t);
-	return mix(base, above, smoothT);
+	float smoothTransition = smoothstep(0.0, SmoothingAmount, t);
+	return mix(base, above, smoothTransition);
 }
 
 float SampleHeightMap(vec2 samplePoint)
 {
-	// wrap around texture
 	return (texture(Heightmap, (samplePoint * (TerrainWidth - 1) + 0.5) / TerrainWidth)).x * HeightScale;
 }
 
@@ -74,7 +70,6 @@ void main()
 	if (QuantizeTerrain)
 		height = QuantizeHeight(height);
 	
-	//vec4 normal = texture(NormalMap, (VertexPosition.xz * 127 + 0.5)/128);
 	vec3 normal = CalculateNormalFromNeighbors();
 
 	WorldPosition = (WorldMatrix * vec4(VertexPosition.x, height, VertexPosition.z, 1.0)).xyz;

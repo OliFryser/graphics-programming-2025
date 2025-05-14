@@ -17,9 +17,6 @@ CameraController::CameraController()
 
 void CameraController::Update(const Window& window, float deltaTime)
 {
-    // Adjust for aspect ratio
-    m_camera->GetCamera()->SetPerspectiveProjectionMatrix(1.0f, window.GetAspectRatio(), .1f, 100.0f);
-
     if (!m_camera || !m_camera->GetCamera() || !m_camera->GetTransform())
         return;
 

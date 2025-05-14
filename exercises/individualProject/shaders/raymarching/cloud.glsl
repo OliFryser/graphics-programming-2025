@@ -59,7 +59,7 @@ float SampleDensity(vec3 p)
 
     float sdf = GetDistance(p);
     float fbm = FBM(worldP * NoiseScale);
-    float noise = (fbm * 0.5 + 0.5) * NoiseStrength;
+    float noise = (fbm) * NoiseStrength;
 
     return (-sdf + noise) * CloudDensity;
 }

@@ -243,6 +243,7 @@ void MapApplication::Cleanup()
 void MapApplication::OnWindowResize(int width, int height)
 {
     m_renderer.UpdateRenderPassFramebuffers(width, height);
+    m_cameraController.GetCamera()->GetCamera()->SetPerspectiveProjectionMatrix(1.0f, GetMainWindow().GetAspectRatio(), .1f, 100.0f);
 }
 
 void MapApplication::InitializeTextures()
@@ -319,8 +320,6 @@ void MapApplication::InitializeMaterials()
         m_terrainMaterials[0]->SetUniformValue("ColorTextureScale", glm::vec2(0.05f));
         m_terrainMaterials[0]->SetUniformValue("Color", glm::vec4(1.0f));
         m_terrainMaterials[0]->SetUniformValue("TerrainWidth", static_cast<int>(m_gridX));
-        m_terrainMaterials[0]->SetUniformValue("ChunkRows", static_cast<int>(m_gridHeight));
-        m_terrainMaterials[0]->SetUniformValue("ChunkColumns", static_cast<int>(m_gridWidth));
         
         m_terrainMaterials[0]->SetUniformValue("AmbientColor", glm::vec3(0.25f));
         m_terrainMaterials[0]->SetUniformValue("Levels", m_levels);
