@@ -1,6 +1,3 @@
-//Inputs
-in vec2 TexCoord;
-
 // Uniforms
 uniform vec3 SphereColor;
 uniform vec3 SphereCenter;

@@ -17,7 +17,6 @@
 #include <ituGL/scene/RendererSceneVisitor.h>
 #include <ituGL/scene/ImGuiSceneVisitor.h>
 
-
 #include <ituGL/geometry/VertexFormat.h>
 #include <ituGL/geometry/Model.h>
 
@@ -50,6 +49,7 @@ MapApplication::MapApplication()
     , m_sphereCenter(-7.0f, 4.8f, -10.0f)
     , m_boxTranslation(2.0f, 4.0f, 0.0f)
     , m_boxRotation(0.0f)
+    , m_frame(0)
 {
 }
 
@@ -94,6 +94,7 @@ void MapApplication::InitializeLights()
 void MapApplication::Update()
 {
     Application::Update();
+    m_frame++;
     const Camera& camera = *m_cameraController.GetCamera()->GetCamera();
 
     // Update the material properties
@@ -133,6 +134,7 @@ void MapApplication::UpdateRaymarchMaterial(const Camera& camera)
     m_cloudsMaterial->SetUniformValue("LightColor", m_directionalLight->GetColor());
     m_cloudsMaterial->SetUniformValue("Smoothness", m_smoothness);
     m_cloudsMaterial->SetUniformValue("Time", GetCurrentTime());
+    m_cloudsMaterial->SetUniformValue("Frame", m_frame);
     m_cloudsMaterial->SetUniformValue("CloudColor", m_cloudColor);
 
     const auto& viewTransform = camera.GetViewMatrix();
@@ -256,8 +258,12 @@ void MapApplication::InitializeTextures()
     m_rockTexture = LoadTexture("textures/rock.jpg");
     m_snowTexture = LoadTexture("textures/snow.jpg");
     m_waterTexture = LoadTexture("textures/water.png");
-    m_blueNoiseTexture = LoadTexture("textures/blue-noise.png");
 
+    m_blueNoiseTexture = LoadTexture("textures/blue-noise.png");
+    m_blueNoiseTexture->SetParameter(Texture2DObject::ParameterEnum::WrapS, GL_MIRRORED_REPEAT);
+    m_blueNoiseTexture->SetParameter(Texture2DObject::ParameterEnum::WrapT, GL_MIRRORED_REPEAT);
+    m_blueNoiseTexture->SetParameter(Texture2DObject::ParameterEnum::MinFilter, GL_NEAREST);
+    m_blueNoiseTexture->SetParameter(Texture2DObject::ParameterEnum::MagFilter, GL_NEAREST);
     CreateCloudNoise();
 }
 
@@ -439,6 +445,7 @@ void MapApplication::InitializeRenderer()
     m_cloudsMaterial->SetUniformValue("BoxSize", glm::vec3(100.0f, 1.7f, 1000.0f));
     m_cloudsMaterial->SetUniformValue("NoiseTexture", m_cloudNoise);
     m_cloudsMaterial->SetUniformValue("DepthTexture", m_depthTexture);
+    m_cloudsMaterial->SetUniformValue("BlueNoiseTexture", m_blueNoiseTexture);
     m_cloudsMaterial->SetUniformValue("NoiseStrength", .2f);
     m_cloudsMaterial->SetUniformValue("CloudDensity", .3f);
 

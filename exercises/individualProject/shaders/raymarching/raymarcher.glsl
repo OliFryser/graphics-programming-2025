@@ -47,9 +47,8 @@ struct Output {
 };
 
 // Volumetric raymarching inspired by https://blog.maximeheckel.com/posts/real-time-cloudscapes-with-volumetric-raymarching/
-void VolumetricRaymarch(vec3 origin, vec3 dir, vec3 lightDir, float maxDistance, inout Output o)
+void VolumetricRaymarch(vec3 origin, vec3 dir, vec3 lightDir, float maxDistance, float offset, inout Output o)
 {
-    float depth = 0.0;
     float delta = 0.3;
 
     vec4 res = vec4(0.0);
@@ -62,6 +61,8 @@ void VolumetricRaymarch(vec3 origin, vec3 dir, vec3 lightDir, float maxDistance,
     float marchSize;
     vec3 lightColor, volumeColor;
     GetVolumetricMarcherConfig(maxSteps, marchSize, lightColor, volumeColor);
+
+    float depth = marchSize * offset;
 
     // Iterate until maxSteps is reached or we find a point
     for (uint i = 0u; i < maxSteps; ++i)

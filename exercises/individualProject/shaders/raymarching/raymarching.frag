@@ -1,3 +1,6 @@
+//Inputs
+in vec2 TexCoord;
+
 //Outputs
 out vec4 FragColor;
 
@@ -14,6 +17,8 @@ uniform uint MaxSteps;
 uniform float MarchSize;
 
 uniform sampler2D DepthTexture;
+uniform sampler2D BlueNoiseTexture
+uniform int Frame;
 
 // Configure ray marcher
 void GetRayMarcherConfig(out uint maxSteps, out float maxDistance, out float surfaceDistance)
@@ -31,15 +36,11 @@ void GetVolumetricMarcherConfig(out uint maxSteps, out float marchSize, out vec3
 	volumeColor = CloudColor;
 }
 
-float LinearizeDepth(float z, float near, float far)
+float GetSceneDepthInViewSpace(float sceneDepth)
 {
-    float ndc = z * 2.0 - 1.0; // back to NDC
-    return (2.0 * near * far) / (far + near - ndc * (far - near));
-}
-
-float GetSceneDepthInLength(float sceneDepth)
-{
+	// remap from [0;1] to [-1;1] (ndc)
 	vec4 ndc = vec4(TexCoord * 2.0 - 1.0, sceneDepth * 2.0 - 1.0, 1.0);
+	// get coord in viewspace
 	vec4 viewPos = InvProjMatrix * ndc;
 	viewPos /= viewPos.w;
 	return length(viewPos.xyz);
@@ -47,26 +48,30 @@ float GetSceneDepthInLength(float sceneDepth)
 
 void main()
 {
-	// TODO: Pass these as uniforms
-	float near = 0.1;
-	float far = 100.0;
 	// Start from transformed position
 	vec4 viewPos = InvProjMatrix * vec4(TexCoord.xy * 2.0 - 1.0, 0.0, 1.0);
 	vec3 origin = viewPos.xyz / viewPos.w;
 
 	// Initial distance to camera
 	float distance = length(origin);
-	float sceneDepth = texture(DepthTexture, TexCoord).r;
-	sceneDepth = GetSceneDepthInLength(sceneDepth);
-
+	
 	// Normalize to get view direction
 	vec3 dir = origin / distance;
 
+	// Get the light direction in viewspace (this only works with one light)
 	vec3 lightDir = normalize((ViewMatrix * vec4(LightDirection, 0.0)).xyz);
-	
-	Output o;
+
+	// Get the depth from the depth buffer from the forward renderpass
+	float sceneDepth = texture(DepthTexture, TexCoord).r;
+	sceneDepth = GetSceneDepthInViewSpace(sceneDepth);
+
+	// Sample blue noise and use offset
+	float blueNoise = texture(BlueNoiseTexture, gl_FragCoord.xy / 1024.0).r;
+	float offset = fract(blueNoise + float(Frame%32) / sqrt(0.5));
+
 	// Use Volumetric Raymarching to sample the color
-	VolumetricRaymarch(origin, dir, lightDir, sceneDepth, o);
-	// With the output value, get the final color
+	Output o;
+	VolumetricRaymarch(origin, dir, lightDir, sceneDepth, offset, o);
+	
 	FragColor = o.color;
 }

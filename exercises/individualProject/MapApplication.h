@@ -97,6 +97,8 @@ private:
 private:
     const int TERRAIN_MESH_COUNT = 4;
 
+    int m_frame;
+
     unsigned int m_gridX, m_gridY, m_gridWidth, m_gridHeight;
 
     ShaderLoader m_vertexShaderLoader;
