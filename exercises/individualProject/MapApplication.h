@@ -121,11 +121,15 @@ private:
     float m_waterLevel;
     int m_levels;
     bool m_quantizeTerrain;
-    std::shared_ptr<Texture3DObject> m_cloudNoise;
 
     // Raymarching
     float m_smoothness;
     glm::vec3 m_cloudColor;
+    std::shared_ptr<Texture3DObject> m_cloudNoise;
+    std::shared_ptr<Texture2DObject> m_blueNoiseTexture;
+    glm::vec3 m_sphereCenter;
+    glm::vec3 m_boxTranslation;
+    glm::vec3 m_boxRotation;
 
     std::shared_ptr<Mesh> m_terrainPatch;
     std::vector<std::shared_ptr<Material>> m_terrainMaterials;

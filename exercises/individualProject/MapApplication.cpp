@@ -47,6 +47,9 @@ MapApplication::MapApplication()
     , m_quantizeTerrain(true)
     , m_smoothness(.8f)
     , m_cloudColor(0.68, 0.68, 0.68)
+    , m_sphereCenter(-7.0f, 4.8f, -10.0f)
+    , m_boxTranslation(2.0f, 4.0f, 0.0f)
+    , m_boxRotation(0.0f)
 {
 }
 
@@ -131,6 +134,18 @@ void MapApplication::UpdateRaymarchMaterial(const Camera& camera)
     m_cloudsMaterial->SetUniformValue("Smoothness", m_smoothness);
     m_cloudsMaterial->SetUniformValue("Time", GetCurrentTime());
     m_cloudsMaterial->SetUniformValue("CloudColor", m_cloudColor);
+
+    const auto& viewTransform = camera.GetViewMatrix();
+    
+    auto transformedPosition = (viewTransform * glm::vec4(m_sphereCenter, 1.0));
+    m_cloudsMaterial->SetUniformValue("SphereCenter", glm::vec3(transformedPosition.x, transformedPosition.y, transformedPosition.z));
+
+    auto boxTransform = glm::translate(m_boxTranslation);
+    boxTransform = glm::rotate(boxTransform, m_boxRotation.x, glm::vec3(1.0f, .0f, .0f));
+    boxTransform = glm::rotate(boxTransform, m_boxRotation.y, glm::vec3(.0f, 1.0f, .0f));
+    boxTransform = glm::rotate(boxTransform, m_boxRotation.z, glm::vec3(.0f, .0f, 1.0f));
+
+    m_cloudsMaterial->SetUniformValue("BoxMatrix", viewTransform * boxTransform);
 }
 
 void MapApplication::Render()
@@ -187,35 +202,17 @@ void MapApplication::DrawRaymarchGui()
 {
     if (auto window = m_imGui.UseWindow("Raymarch parameters"))
     {
-        const auto& viewTransform = m_cameraController.GetCamera()->GetCamera()->GetViewMatrix();
-
         if (ImGui::TreeNodeEx("Sphere", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            static glm::vec3 sphereCenter(glm::vec3(-7.0f, 4.8f, -10.0f));
-
-            //ImGui::ColorEdit3("Sphere Color", m_cloudsMaterial->GetDataUniformPointer<float>("SphereColor"));
-            ImGui::DragFloat3("Sphere Center", &sphereCenter.x, .1f);
-            auto transformedPosition = (viewTransform * glm::vec4(sphereCenter, 1.0));
-            m_cloudsMaterial->SetUniformValue("SphereCenter", glm::vec3(transformedPosition.x, transformedPosition.y, transformedPosition.z));
+            ImGui::DragFloat3("Sphere Center", &m_sphereCenter.x, .1f);
 
             ImGui::DragFloat("Sphere Radius", m_cloudsMaterial->GetDataUniformPointer<float>("SphereRadius"), .1f);
             ImGui::TreePop();
         }
         if (ImGui::TreeNodeEx("Box", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            static glm::vec3 translation(2.0f, 4.0f, 0.0f);
-            static glm::vec3 rotation(0.0f);
-
-            //ImGui::ColorEdit3("Box Color", m_cloudsMaterial->GetDataUniformPointer<float>("BoxColor"));
-            ImGui::DragFloat3("Box Translation", &translation.x, .1f);
-            ImGui::DragFloat3("Box rotation", &rotation.x, .1f);
-
-            auto boxTransform = glm::translate(translation);
-            boxTransform = glm::rotate(boxTransform, rotation.x, glm::vec3(1.0f, .0f, .0f));
-            boxTransform = glm::rotate(boxTransform, rotation.y, glm::vec3(.0f, 1.0f, .0f));
-            boxTransform = glm::rotate(boxTransform, rotation.z, glm::vec3(.0f, .0f, 1.0f));
-
-            m_cloudsMaterial->SetUniformValue("BoxMatrix", viewTransform * boxTransform);
+            ImGui::DragFloat3("Box Translation", &m_boxTranslation.x, .1f);
+            ImGui::DragFloat3("Box rotation", &m_boxRotation.x, .1f);
 
             ImGui::DragFloat3("Box Size", m_cloudsMaterial->GetDataUniformPointer<float>("BoxSize"), .1f);
             ImGui::TreePop();
@@ -259,6 +256,7 @@ void MapApplication::InitializeTextures()
     m_rockTexture = LoadTexture("textures/rock.jpg");
     m_snowTexture = LoadTexture("textures/snow.jpg");
     m_waterTexture = LoadTexture("textures/water.png");
+    m_blueNoiseTexture = LoadTexture("textures/blue-noise.png");
 
     CreateCloudNoise();
 }
@@ -704,7 +702,7 @@ void MapApplication::CreateCloudNoise()
     }
 
     m_cloudNoise->Bind();
-    m_cloudNoise->SetImage<float>(0, WIDTH, HEIGHT, DEPTH, TextureObject::FormatR, TextureObject::InternalFormatR16F, pixels);
+    m_cloudNoise->SetImage<float>(0, WIDTH, HEIGHT, DEPTH, TextureObject::FormatR, TextureObject::InternalFormatR, pixels);
     m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapS, GL_REPEAT);
     m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapT, GL_REPEAT);
     m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapR, GL_REPEAT);
