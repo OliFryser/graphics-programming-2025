@@ -55,7 +55,7 @@ protected:
         // Retrieve the 'this' pointer from the window user pointer
         Application* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
         if (app) {
-            app->OnWindowResize(width, height);  // Call the instance method
+            app->OnWindowResize(width, height);
         }
     }
 

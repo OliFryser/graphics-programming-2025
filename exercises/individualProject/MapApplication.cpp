@@ -175,7 +175,7 @@ void MapApplication::RenderGui()
         ImGui::SliderFloat("March size", m_cloudsMaterial->GetDataUniformPointer<float>("MarchSize"), .02f, 1.0f);
         ImGui::SliderInt("Max steps", (int*)(m_cloudsMaterial->GetDataUniformPointer<unsigned int>("MaxSteps")), 0, 1000);
         ImGui::DragFloat("Max Render Distance", &m_maxRenderDistance, 1.0f);
-        ImGui::SliderFloat("Safe step distance", m_cloudsMaterial->GetDataUniformPointer<float>("MaxSafeStep"), 0.0f, 100.0f);
+        //ImGui::SliderFloat("Safe step distance", m_cloudsMaterial->GetDataUniformPointer<float>("MaxSafeStep"), 0.0f, 100.0f);
     }
 
 
@@ -444,14 +444,14 @@ void MapApplication::InitializeRenderer()
 
     // Init raymarching values
     m_cloudsMaterial->SetUniformValue("SphereColor", glm::vec3(0.0f, 0.0f, 1.0f));
-    m_cloudsMaterial->SetUniformValue("SphereRadius", 3.0f);
+    m_cloudsMaterial->SetUniformValue("SphereRadius", 4.0f);
     m_cloudsMaterial->SetUniformValue("BoxColor", glm::vec3(1.0f, 0.0f, .0f));
-    m_cloudsMaterial->SetUniformValue("BoxSize", glm::vec3(100.0f, 1.7f, 1000.0f));
+    m_cloudsMaterial->SetUniformValue("BoxSize", glm::vec3(100.0f, 1.7f, 100.0f));
     m_cloudsMaterial->SetUniformValue("NoiseTexture", m_cloudNoise);
     m_cloudsMaterial->SetUniformValue("DepthTexture", m_depthTexture);
     m_cloudsMaterial->SetUniformValue("BlueNoiseTexture", m_blueNoiseTexture);
     m_cloudsMaterial->SetUniformValue("NoiseStrength", .8f);
-    m_cloudsMaterial->SetUniformValue("NoiseScale", .1f);
+    m_cloudsMaterial->SetUniformValue("NoiseScale", .3f);
     m_cloudsMaterial->SetUniformValue("CloudDensity", .5f);
     m_cloudsMaterial->SetUniformValue("MarchSize", 0.3f);
     m_cloudsMaterial->SetUniformValue("MaxSteps", 100u);
@@ -694,7 +694,6 @@ void MapApplication::CreateCloudNoise()
     const int HEIGHT = 128;
     const int WIDTH = 128;
     const int DEPTH = 128;
-    float scale = 4.0f;
 
     std::vector<float> pixels(HEIGHT * WIDTH * DEPTH);
     for (unsigned int j = 0; j < HEIGHT; ++j)
@@ -707,7 +706,7 @@ void MapApplication::CreateCloudNoise()
                 float y = j / static_cast<float>(HEIGHT - 1);
                 float z = k / static_cast<float>(DEPTH - 1);
 
-                float noise = stb_perlin_fbm_noise3(x * scale, y * scale, z * scale, 2.0f, .5f, 6) * .5f + .5f;
+                float noise = stb_perlin_fbm_noise3(x, y, z, 2.0f, .5f, 6) * .5f + .5f;
 
                 pixels[i + j * WIDTH + k * WIDTH * HEIGHT] = (noise + 1.0f) * .5f;
             }
@@ -715,7 +714,7 @@ void MapApplication::CreateCloudNoise()
     }
 
     m_cloudNoise->Bind();
-    m_cloudNoise->SetImage<float>(0, WIDTH, HEIGHT, DEPTH, TextureObject::FormatR, TextureObject::InternalFormatR, pixels);
+    m_cloudNoise->SetImage<float>(0, WIDTH, HEIGHT, DEPTH, TextureObject::FormatR, TextureObject::InternalFormatR16F, pixels);
     m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapS, GL_MIRRORED_REPEAT);
     m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapT, GL_MIRRORED_REPEAT);
     m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapR, GL_MIRRORED_REPEAT);

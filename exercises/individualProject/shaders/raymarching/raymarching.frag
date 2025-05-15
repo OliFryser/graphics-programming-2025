@@ -23,14 +23,6 @@ uniform sampler2D DepthTexture;
 uniform sampler2D BlueNoiseTexture;
 uniform int Frame;
 
-// Configure ray marcher
-void GetRayMarcherConfig(out uint maxSteps, out float maxDistance, out float surfaceDistance)
-{
-    maxSteps = MaxSteps;
-    maxDistance = ProjMatrix[3][2] / (ProjMatrix[2][2] + 1.0); // Far plane
-    surfaceDistance = 0.001;
-}
-
 void GetVolumetricMarcherConfig(out uint maxSteps, out float marchSize, out float maxSafeStep, out vec3 lightColor, out vec3 volumeColor)
 {
 	maxSteps = MaxSteps;
@@ -71,8 +63,8 @@ void main()
 	sceneDepth = min(MaxRenderDistance, sceneDepth);
 
 	// Sample blue noise and use offset
-	float blueNoise = texture(BlueNoiseTexture, gl_FragCoord.xy / 512.0).r;
-	float offset = fract(blueNoise + float(Frame%32) / sqrt(0.5));
+	float blueNoise = texture(BlueNoiseTexture, gl_FragCoord.xy / 1024.0).r;
+	float offset = fract(blueNoise + float(Frame%32) / sqrt(0.50));
 
 	// Use Volumetric Raymarching to sample the color
 	Output o;
