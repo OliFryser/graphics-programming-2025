@@ -38,7 +38,15 @@ void VolumetricRaymarch(vec3 origin, vec3 dir, vec3 lightDir, float maxDistance,
         vec3 p = origin + dir * depth;
 
         float density = SampleDensity(p);
-
+        // if we are outside the sdf, step forward a safe distance aided raymarching to get closer 
+        // This reintroduces banding, and is therefore commented out. I wonder if there is a better approach. 
+//        if (density < 0.01)
+//        {
+//            float sdf = GetDistance(p);
+//            depth += clamp(sdf, marchSize, maxSafeStep);
+//            continue;
+//        }
+        
         // we only draw the density if it's greater than 0;
         if (density > 0.0) {
             // directional derivative

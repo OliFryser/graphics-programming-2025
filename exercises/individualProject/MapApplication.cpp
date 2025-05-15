@@ -456,6 +456,7 @@ void MapApplication::InitializeRenderer()
     m_cloudsMaterial->SetUniformValue("MarchSize", 0.3f);
     m_cloudsMaterial->SetUniformValue("MaxSteps", 100u);
     m_cloudsMaterial->SetUniformValue("MaxSafeStep", 5.0f);
+    m_cloudsMaterial->SetDepthWrite(false);
 
     m_renderer.AddRenderPass(std::move(framebufferRenderPass));
     m_renderer.AddRenderPass(std::make_unique<SkyboxRenderPass>(m_skyboxTexture));
@@ -669,7 +670,6 @@ std::shared_ptr<Material> MapApplication::CreatePostFXMaterial(const char* fragm
     // Create material
     std::shared_ptr<Material> material = std::make_shared<Material>(shaderProgramPtr);
     material->SetUniformValue("SourceTexture", sourceTexture);
-
     return material;
 }
 
