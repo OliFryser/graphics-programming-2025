@@ -1,5 +1,4 @@
 #include <ituGL/core/BufferObject.h>
-
 #include <cassert>
 
 // Create the object initially null, get object handle and generate 1 buffer

@@ -257,7 +257,7 @@ void MapApplication::InitializeTextures()
         }
     }
 
-    m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("models/skybox/BlueSkyCubeMapLQ.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
+    m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("models/skybox/BlueSkyCubeMapLQ.png", TextureObject::FormatRGB, TextureObject::InternalFormatSRGB8);
 
     m_dirtTexture = LoadTexture("textures/dirt.png");
     m_grassTexture = LoadTexture("textures/grass.jpg");
@@ -499,7 +499,7 @@ std::shared_ptr<Texture2DObject> MapApplication::CreateDefaultTexture()
     }
 
     texture->Bind();
-    texture->SetImage<float>(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, pixels);
+    texture->SetImage<float>(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatSRGBA8, pixels);
     texture->GenerateMipmap();
 
     return texture;
@@ -516,7 +516,7 @@ std::shared_ptr<Texture2DObject> MapApplication::LoadTexture(const char* path)
     unsigned char* data = stbi_load(path, &width, &height, &components, 4);
 
     texture->Bind();
-    texture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, std::span<const unsigned char>(data, width * height * 4));
+    texture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatSRGBA8, std::span<const unsigned char>(data, width * height * 4));
 
     texture->GenerateMipmap();
 
@@ -715,10 +715,11 @@ void MapApplication::CreateCloudNoise()
 
     m_cloudNoise->Bind();
     m_cloudNoise->SetImage<float>(0, WIDTH, HEIGHT, DEPTH, TextureObject::FormatR, TextureObject::InternalFormatR16F, pixels);
+    m_cloudNoise->GenerateMipmap();
     m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapS, GL_MIRRORED_REPEAT);
     m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapT, GL_MIRRORED_REPEAT);
     m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::WrapR, GL_MIRRORED_REPEAT);
-    m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::MinFilter, GL_LINEAR);
+    m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::MinFilter, GL_LINEAR_MIPMAP_LINEAR);
     m_cloudNoise->SetParameter(Texture2DObject::ParameterEnum::MagFilter, GL_LINEAR);
     Texture2DObject::Unbind();
 }

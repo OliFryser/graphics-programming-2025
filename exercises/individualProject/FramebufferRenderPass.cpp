@@ -27,7 +27,7 @@ void FramebufferRenderPass::InitializeTextures(int width, int height)
     // Color: Bind the newly created texture, set the image, and the min and magfilter as nearest
     m_colorTexture = std::make_shared<Texture2DObject>();
     m_colorTexture->Bind();
-    m_colorTexture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA);
+    m_colorTexture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatSRGBA8);
     m_colorTexture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_NEAREST);
     m_colorTexture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_NEAREST);
     
