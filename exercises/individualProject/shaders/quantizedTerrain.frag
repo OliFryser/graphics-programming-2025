@@ -44,7 +44,7 @@ void main()
 	data.normal = normalize(WorldNormal);
 	data.reflectionColor = Color.rgb * tex.rgb;
 	vec3 arm = vec3(1.0, 1.0, 1.0);
-	data.ambientReflectance = arm.x;
+	data.ambientReflectance = 0.65;
 	data.diffuseReflectance = 1.0;
 	data.specularReflectance = pow(1.0 - arm.y, 4);
 	data.specularExponent = 2.0 / pow(arm.y, 2) - 2.0;

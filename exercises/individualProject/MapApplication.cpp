@@ -3,9 +3,7 @@
 #include <ituGL/asset/TextureCubemapLoader.h>
 #include <ituGL/texture/Texture2DObject.h>
 #include <ituGL/texture/Texture3DObject.h>
-#include <ituGL/texture/FramebufferObject.h>
 
-#include <ituGL/renderer/ForwardRenderPass.h>
 #include "FramebufferRenderPass.h"
 #include <ituGL/renderer/SkyboxRenderPass.h>
 #include <ituGL/renderer/PostFXRenderPass.h>
@@ -30,6 +28,7 @@
 #include <imgui.h>
 #include <format>
 #include <iostream>
+#include <ituGL/shader/Shader.h>
 
 MapApplication::MapApplication()
     : Application(1024, 1024, "Individual Project")
@@ -317,7 +316,7 @@ void MapApplication::InitializeMaterials()
         m_terrainMaterials[0]->SetUniformValue("ColorTextureRange01", glm::vec2(.3f, .5f));
         m_terrainMaterials[0]->SetUniformValue("ColorTextureRange12", glm::vec2(.5f, .7f));
         m_terrainMaterials[0]->SetUniformValue("ColorTextureRange23", glm::vec2(.7f, .8f));
-        m_terrainMaterials[0]->SetUniformValue("ColorTextureScale", glm::vec2(0.05f));
+        m_terrainMaterials[0]->SetUniformValue("ColorTextureScale", glm::vec2(0.2f));
         m_terrainMaterials[0]->SetUniformValue("Color", glm::vec4(1.0f));
         m_terrainMaterials[0]->SetUniformValue("TerrainWidth", static_cast<int>(m_gridX));
         
@@ -376,7 +375,7 @@ void MapApplication::InitializeMaterials()
         
         m_waterMaterial->SetUniformValue("TerrainWidth", static_cast<int>(m_gridX));
         m_waterMaterial->SetUniformValue("ColorTexture", m_waterTexture);
-        m_waterMaterial->SetUniformValue("ColorTextureScale", glm::vec2(0.05f));
+        m_waterMaterial->SetUniformValue("ColorTextureScale", glm::vec2(0.2f));
         m_waterMaterial->SetUniformValue("Color", glm::vec4(1.0f, 1.0f, 1.0f, .6f));
         m_waterMaterial->SetBlendParams(Material::BlendParam::SourceAlpha, Material::BlendParam::OneMinusSourceAlpha);
         m_waterMaterial->SetBlendEquation(Material::BlendEquation::Add);
